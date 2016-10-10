@@ -1,6 +1,5 @@
 import Koa from 'koa';
 import Router from 'koa-router';
-import bodyParser from 'koa-bodyparser';
 import ErrorHandler from 'src/middleware/error-handler';
 import auth from 'src/routes/auth';
 import slack from 'src/routes/slack';

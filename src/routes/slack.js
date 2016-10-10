@@ -1,4 +1,5 @@
 import Router from 'koa-router';
+import bodyParser from 'koa-bodyparser';
 import SlackMiddleware from 'src/middleware/slack';
 import redis from 'src/lib/redis';
 import kiosk from 'src/lib/kiosk-service';
@@ -21,7 +22,7 @@ router.get('/purchase/:productSlug', async (ctx) => {
 	ctx.body = await kiosk.purchase(ctx.params.productSlug, 'dacuna');
 })
 
-export function(app) {
+export default function(app) {
 	app.use(router.routes());
 	app.use(router.allowedMethods());
 }
