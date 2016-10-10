@@ -15,7 +15,7 @@ authRouter.get('/', async (ctx) => {
 		'commands'
 	];
 
-	ctx.redirect(`https://slack.com/oauth/authorize?scope=${scope.split(',')}'&client_id=${process.env.SLACK_CLIENT_ID}`);
+	ctx.redirect(`https://slack.com/oauth/authorize?scope=${scope.join(',')}&client_id=${process.env.SLACK_CLIENT_ID}`);
 })
 
 authRouter.get('slack-callback', '/callback', async (ctx) => {
