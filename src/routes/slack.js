@@ -1,5 +1,6 @@
 import Router from 'koa-router';
 import bodyParser from 'koa-bodyparser';
+import _ from 'lodash';
 import SlackMiddleware from 'src/middleware/slack';
 import redis from 'src/lib/redis';
 import kiosk from 'src/lib/kiosk-service';
@@ -10,12 +11,24 @@ router.use(bodyParser());
 router.use(SlackMiddleware);
 
 router.post('/', async (ctx) => {
-	const that = await Promise.resolve('Ok')
-	ctx.body = that;
-});
-
-router.get('/', async (ctx) => {
-	ctx.body = await kiosk.getStock();
+	ctx.body = {
+		text: 'Kioskbot',
+		attachments: [{
+			text: 'Inventario:',
+			fallback: '??',
+			callback_id: 'inventory',
+			color: '#3AA3E3',
+			attachment_type: 'default',
+			actions: _.map(await kiosk.getStock(), item => {
+				return {
+					name: item.item,
+					text: `${item.item} ($${item.precio})`,
+					type: 'button',
+					value: item.item,
+				}
+			}),
+		}],
+	};
 })
 
 router.get('/purchase/:productSlug', async (ctx) => {
