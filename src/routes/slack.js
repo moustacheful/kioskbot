@@ -5,6 +5,17 @@ import SlackMiddleware from 'src/middleware/slack';
 import redis from 'src/lib/redis';
 import kiosk from 'src/lib/kiosk-service';
 
+const authRouter = Router({ prefix: '/slack/auth' });
+
+authRouter.use(bodyParser());
+
+authRouter.get('/callback', async (ctx) => {
+	ctx.body = {
+		query: ctx.query,
+		body: ctx.request.body,
+	}
+});
+
 const router = Router({ prefix: '/slack' });
 
 router.use(bodyParser());
@@ -38,4 +49,6 @@ router.get('/purchase/:productSlug', async (ctx) => {
 export default function(app) {
 	app.use(router.routes());
 	app.use(router.allowedMethods());
+	app.use(authRouter.routes());
+	app.use(authRouter.allowedMethods());
 }
