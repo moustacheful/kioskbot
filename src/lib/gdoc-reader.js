@@ -34,7 +34,7 @@ class GDocReader extends EventEmitter {
 	}
 
 	start(){
-		setInterval(this.read, 5000);
+		setTimeout(this.read, 5000);
 	}
 
 	async read(){

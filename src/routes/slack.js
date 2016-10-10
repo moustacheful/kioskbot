@@ -16,9 +16,9 @@ authRouter.get('/', async (ctx) => {
 	];
 
 	ctx.redirect(`https://slack.com/oauth/authorize?scope=${scope.join(',')}&client_id=${process.env.SLACK_CLIENT_ID}`);
-})
+});
 
-authRouter.get('slack-callback', '/callback', async (ctx) => {
+authRouter.get('/callback', async (ctx) => {
 	const token = await request('https://slack.com/api/oauth.access', {
 		method: 'POST',
 		json: true,
