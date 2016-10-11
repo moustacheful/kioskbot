@@ -4,7 +4,7 @@ import _ from 'lodash';
 import SlackMiddleware from 'src/middleware/slack';
 import redis from 'src/lib/redis';
 import kiosk from 'src/lib/kiosk-service';
-import request from 'request-promise';
+import fetch from 'node-fetch';
 
 const authRouter = Router({ prefix: '/slack/auth' });
 
@@ -18,18 +18,32 @@ authRouter.get('/', async (ctx) => {
 	ctx.redirect(`https://slack.com/oauth/authorize?scope=${scope.join(',')}&client_id=${process.env.SLACK_CLIENT_ID}`);
 });
 
+authRouter.post('/test', async (ctx) => {
+	ctx.body = {
+		headers: ctx.request.headers,
+		body: ctx.request.body,
+		req: ctx.request
+	}
+});
+
 authRouter.get('/callback', async (ctx) => {
-	const token = await request('https://slack.com/api/oauth.access', {
-		method: 'POST',
-		json: true,
-		body: {
+
+	//const url = 'http://localhost:5000/slack/auth/test';
+	const url = 'https://slack.com/api/oauth.access';
+	const res = await fetch(url, {
+		method: 'post',
+		body: JSON.stringify({
 			client_id: process.env.SLACK_CLIENT_ID,
 			client_secret: process.env.SLACK_CLIENT_SECRET,
-			redirect_uri: authRouter.url('slack-callback'),
+			redirect_uri: process.env.SLACK_CALLBACK,
 			code: ctx.query.code,
+		}),
+		headers: {
+			'Content-Type': 'application/json; charset=utf-8'
 		}
 	});
-	ctx.body = token;
+	console.log(res);
+	ctx.body = await res.json();
 });
 
 const router = Router({ prefix: '/slack' });
