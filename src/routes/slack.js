@@ -1,4 +1,5 @@
 import Router from 'koa-router';
+import qs from 'querystring';
 import bodyParser from 'koa-bodyparser';
 import _ from 'lodash';
 import SlackMiddleware from 'src/middleware/slack';
@@ -32,17 +33,17 @@ authRouter.get('/callback', async (ctx) => {
 	const url = 'https://slack.com/api/oauth.access';
 	const res = await fetch(url, {
 		method: 'post',
-		body: JSON.stringify({
+		body: qs.stringify({
 			client_id: process.env.SLACK_CLIENT_ID,
 			client_secret: process.env.SLACK_CLIENT_SECRET,
 			redirect_uri: process.env.SLACK_CALLBACK,
 			code: ctx.query.code,
 		}),
 		headers: {
-			'Content-Type': 'application/json; charset=utf-8'
+			'Content-Type': 'application/x-www-form-urlencoded'
 		}
 	});
-	console.log(res);
+
 	ctx.body = await res.json();
 });
 
