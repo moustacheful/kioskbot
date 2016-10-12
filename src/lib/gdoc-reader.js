@@ -2,6 +2,7 @@ import google from 'googleapis';
 import Promise from 'bluebird';
 import { EventEmitter } from 'events';
 import _ from 'lodash';
+import uuid from 'uuid';
 import redis from './redis';
 
 const sheets = google.sheets('v4');
@@ -9,7 +10,9 @@ const drive = google.drive('v3');
 
 Promise.promisifyAll(google.auth.OAuth2.prototype);
 Promise.promisifyAll(sheets.spreadsheets.values);
+Promise.promisifyAll(drive.files);
 Promise.promisifyAll(drive.revisions);
+Promise.promisifyAll(drive.changes);
 
 const oAuth = new google.auth.OAuth2(
 	process.env.GOOGLE_CLIENT_ID,
@@ -22,19 +25,35 @@ class GDocReader extends EventEmitter {
 		super();
 		console.log('gdoc reader started');
 		this.read = this.read.bind(this);
-
 		this.getToken();
 		this.start();
 	}
 	
+	async setup(){
+		await this.getToken();
+		const channelId = uuid.v4();
+		const watchResponse = await drive.files.watchAsync({
+			auth: oAuth,
+			fileId: process.env.GSHEET,
+			resource: {
+				id: channelId,
+				type: 'web_hook',
+				address: `${process.env.BASE_URL}/incoming`,
+			}
+		});
+		await redis.setAsync('app:gsheet-channel', channelId);
+		console.log(watchResponse)
+	}
+
 	async getToken(){
-		this.token = await redis.getAsync('token');
+		this.token = await redis.getAsync('token:google');
 		oAuth.setCredentials(JSON.parse(this.token));
 		google.options({ auth: oAuth });
 	}
 
 	start(){
-		setTimeout(this.read, 5000);
+
+		//setTimeout(this.read, 5000);
 	}
 
 	async read(){
@@ -53,7 +72,7 @@ class GDocReader extends EventEmitter {
 				}).spread(res => res),
 			];
 			const newSheet = JSON.parse(JSON.stringify(sheet));
-			console.log(lastRevision);
+
 			newSheet.values = _.map(newSheet.values, (row, i) => {
 				if(i==0) return row;
 				const newRow =  [...row];
@@ -76,7 +95,7 @@ class GDocReader extends EventEmitter {
 			console.log(a)
 			return;
 			*/
-			
+
 			const labels = _.map(sheet.values.shift(), _.snakeCase);
 			const data = _.map(sheet.values, (row, i) => {
 				row = _.take(row, labels.length);
