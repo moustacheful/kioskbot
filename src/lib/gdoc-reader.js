@@ -76,11 +76,12 @@ class GDocReader extends EventEmitter {
 			console.log(a)
 			return;
 			*/
-
+			
 			const labels = _.map(sheet.values.shift(), _.snakeCase);
 			const data = _.map(sheet.values, (row, i) => {
 				row = _.take(row, labels.length);
 				row = _.zipObject(labels, row);
+				row.slug = _.kebabCase(row.item);
 				row.index = i;
 				return row;	
 			});
