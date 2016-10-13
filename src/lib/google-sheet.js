@@ -34,7 +34,7 @@ class GoogleSheet extends EventEmitter {
 	}
 
 	start(){
-		//setTimeout(this.read, 5000);
+		setTimeout(this.read, 5000);
 	}
 
 	async read(){
