@@ -19,14 +19,6 @@ authRouter.get('/', async (ctx) => {
 	ctx.redirect(`https://slack.com/oauth/authorize?scope=${scope.join(',')}&client_id=${process.env.SLACK_CLIENT_ID}`);
 });
 
-authRouter.post('/test', async (ctx) => {
-	ctx.body = {
-		headers: ctx.request.headers,
-		body: ctx.request.body,
-		req: ctx.request
-	}
-});
-
 authRouter.get('/callback', async (ctx) => {
 	const res = await fetch('https://slack.com/api/oauth.access', {
 		method: 'post',
@@ -72,6 +64,11 @@ router.post('/', async (ctx) => {
 		}],
 	};
 })
+
+router.post('/action', async (ctx) => {
+	console.log(ctx.request.body, ctx.query);
+	ctx.body = '```' + JSON.stringify(ctx.request.body,null, '\t') + '```'
+});
 
 router.get('/purchase/:productSlug', async (ctx) => {
 	ctx.body = await kiosk.purchase(ctx.params.productSlug, 'dacuna');

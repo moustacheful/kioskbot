@@ -21,8 +21,9 @@ const oAuth = new google.auth.OAuth2(
 class GoogleSheet extends EventEmitter {
 	constructor(){
 		super();
-		console.log('gdoc reader started');
 		this.read = this.read.bind(this);
+		this._queue = [];
+		this._execQueue = _.debounce(this._execQueue, 5000).bind(this)
 		this.getToken();
 	}
 
@@ -66,26 +67,28 @@ class GoogleSheet extends EventEmitter {
 			console.log('Google sheets fetch failed!:', err.message)
 		}
 	}
-	async update(row, col, val) {
-		row = row + 1;
-		const range = { 
-			sheetId: 'Inventario',  
-			startRowIndex: row,
-			startColumnIndex: col,
-			endRowIndex: row,
-			endColumnIndex: col,
-		};
-		const res = await sheets.spreadsheets.values.updateAsync({
-			spreadsheetId: process.env.GSHEET,
+	
+	update(row, col, val) {
+		const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+		col = alphabet.substr(col,1);
+		row = Number(row) + 2;
+		const range = `Inventario!${col}${row}:${col}${row}`;
+		this._queue.push({
 			range,
+			values: [[val]]	
+		});
+		this._execQueue();
+	}
+
+	_execQueue(){
+		sheets.spreadsheets.values.batchUpdateAsync({
+			spreadsheetId: process.env.GSHEET,
 			valueInputOption: 'USER_ENTERED',
 			resource: {
-				range,
-				values: [[val]]
-			},
-		}).spread(res => res);
-		console.log(res)
-		return res;
+				data: this._queue
+			}
+		});
+		this._queue = [];
 	}
 };
 

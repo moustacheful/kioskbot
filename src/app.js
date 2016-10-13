@@ -14,5 +14,5 @@ auth(app);
 slack(app);
 
 app.listen(process.env.PORT || 5000);
-
+console.log('App running');
 export default app;
