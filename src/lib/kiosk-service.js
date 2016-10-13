@@ -56,12 +56,12 @@ class KioskService {
 
 		const results = await redis.multi(operations).execAsync();
 		googleSheet.update(product.index, 2, results[0]);
-		return (await redis.hgetallAsync(productKey))
+		const debt = await redis.hgetAsync('tab', purchaser);
+		return { debt };
 	}
 
 	async isUpToDate(incoming) {
 		const lastRevision = await redis.hgetallAsync('app:last-revision');
-		console.log(incoming);
 		if (lastRevision && incoming.id === lastRevision.id){
 			return true;
 		}
