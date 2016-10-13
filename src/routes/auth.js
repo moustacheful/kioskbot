@@ -2,7 +2,6 @@ import Promise from 'bluebird';
 import google from 'googleapis';
 import Router from 'koa-router';
 import redis from 'src/lib/redis';
-import gdocReader from 'src/lib/gdoc-reader';
 
 Promise.promisifyAll(google.auth.OAuth2.prototype);
 
@@ -33,12 +32,10 @@ router.get('/auth/callback', async (ctx) => {
 	const [token] = await oAuth.getTokenAsync(ctx.query.code);
 	await redis.setAsync('token:google', JSON.stringify(token));
 	
-	gdocReader.setup();
 	ctx.body = await redis.getAsync('token:google');
 });
 
 export default function (app) {
-	console.log('mounting gapps routes');
 	app.use(router.routes());
 	app.use(router.allowedMethods());
 };

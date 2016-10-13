@@ -10,9 +10,7 @@ const drive = google.drive('v3');
 
 Promise.promisifyAll(google.auth.OAuth2.prototype);
 Promise.promisifyAll(sheets.spreadsheets.values);
-Promise.promisifyAll(drive.files);
 Promise.promisifyAll(drive.revisions);
-Promise.promisifyAll(drive.changes);
 
 const oAuth = new google.auth.OAuth2(
 	process.env.GOOGLE_CLIENT_ID,
@@ -20,29 +18,12 @@ const oAuth = new google.auth.OAuth2(
 	process.env.GOOGLE_CALLBACK
 );
 
-class GDocReader extends EventEmitter {
+class GoogleSheet extends EventEmitter {
 	constructor(){
 		super();
 		console.log('gdoc reader started');
 		this.read = this.read.bind(this);
 		this.getToken();
-		this.start();
-	}
-	
-	async setup(){
-		await this.getToken();
-		const channelId = uuid.v4();
-		const watchResponse = await drive.files.watchAsync({
-			auth: oAuth,
-			fileId: process.env.GSHEET,
-			resource: {
-				id: channelId,
-				type: 'web_hook',
-				address: `${process.env.BASE_URL}/incoming`,
-			}
-		});
-		await redis.setAsync('app:gsheet-channel', channelId);
-		console.log(watchResponse)
 	}
 
 	async getToken(){
@@ -52,7 +33,6 @@ class GDocReader extends EventEmitter {
 	}
 
 	start(){
-
 		//setTimeout(this.read, 5000);
 	}
 
@@ -71,30 +51,6 @@ class GDocReader extends EventEmitter {
 					range: 'Inventario',
 				}).spread(res => res),
 			];
-			const newSheet = JSON.parse(JSON.stringify(sheet));
-
-			newSheet.values = _.map(newSheet.values, (row, i) => {
-				if(i==0) return row;
-				const newRow =  [...row];
-				newRow[2] = Number(newRow[2]) + 15;
-				return newRow;
-			});
-			/*
-			newSheet.range = "Inventario!A1:C10"
-			delete newSheet.majorDimension
-			console.log(newSheet);
-
-
-			const a = await sheets.spreadsheets.values.updateAsync({
-				spreadsheetId: process.env.GSHEET,
-				range: newSheet.range,
-				valueInputOption: 'USER_ENTERED',
-				resource: newSheet
-			}).spread(res => res);
-
-			console.log(a)
-			return;
-			*/
 
 			const labels = _.map(sheet.values.shift(), _.snakeCase);
 			const data = _.map(sheet.values, (row, i) => {
@@ -110,6 +66,27 @@ class GDocReader extends EventEmitter {
 			console.log('Google sheets fetch failed!:', err.message)
 		}
 	}
+	async update(row, col, val) {
+		row = row + 1;
+		const range = { 
+			sheetId: 'Inventario',  
+			startRowIndex: row,
+			startColumnIndex: col,
+			endRowIndex: row,
+			endColumnIndex: col,
+		};
+		const res = await sheets.spreadsheets.values.updateAsync({
+			spreadsheetId: process.env.GSHEET,
+			range,
+			valueInputOption: 'USER_ENTERED',
+			resource: {
+				range,
+				values: [[val]]
+			},
+		}).spread(res => res);
+		console.log(res)
+		return res;
+	}
 };
 
-export default new GDocReader();
+export default new GoogleSheet();

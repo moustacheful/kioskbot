@@ -1,11 +1,11 @@
 import _ from 'lodash';
 import redis from './redis';
-import gdocReader from './gdoc-reader';
+import googleSheet from 'src/lib/google-sheet';
 import uuid from 'uuid';
 
 class KioskService {
 	constructor(){
-		gdocReader.on('stockUpdated', this.updateStock.bind(this));
+		googleSheet.on('stockUpdated', this.updateStock.bind(this));
 	}
 
 	async getStock(){
@@ -18,7 +18,7 @@ class KioskService {
 	async updateStock(newStock, revisionData) {
 		const isUpToDate = await this.isUpToDate(revisionData)
 		if (isUpToDate) return console.log('Is up to date!');
-		const operations = _.map(newStock, row => ['hmset', `inventory:${_.kebabCase(row.item)}`, row]);
+		const operations = _.map(newStock, row => ['hmset', `inventory:${row.slug}`, row]);
 
 		const inStock = _.reduce(operations, (accumulator, operation) => {
 			if(operation[2].stock_actual > 0){
@@ -54,7 +54,9 @@ class KioskService {
 			}],
 		];
 
-		return await redis.multi(operations).execAsync();
+		const results = await redis.multi(operations).execAsync();
+		googleSheet.update(product.index, 2, results[0]);
+		return (await redis.hgetallAsync(productKey))
 	}
 
 	async isUpToDate(incoming) {

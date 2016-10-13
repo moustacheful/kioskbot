@@ -28,10 +28,7 @@ authRouter.post('/test', async (ctx) => {
 });
 
 authRouter.get('/callback', async (ctx) => {
-
-	//const url = 'http://localhost:5000/slack/auth/test';
-	const url = 'https://slack.com/api/oauth.access';
-	const res = await fetch(url, {
+	const res = await fetch('https://slack.com/api/oauth.access', {
 		method: 'post',
 		body: qs.stringify({
 			client_id: process.env.SLACK_CLIENT_ID,
@@ -42,9 +39,12 @@ authRouter.get('/callback', async (ctx) => {
 		headers: {
 			'Content-Type': 'application/x-www-form-urlencoded'
 		}
-	});
+	}).then(res => res.json());
 
-	ctx.body = await res.json();
+	ctx.assert(res.ok, 'Slack login failed.', 401);
+	
+	await redis.setAsync('token:slack', res.access_token);
+	ctx.body = await redis.getAsync('token:slack');
 });
 
 const router = Router({ prefix: '/slack' });
