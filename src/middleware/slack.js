@@ -8,6 +8,7 @@ export default async function(ctx, next) {
 	){
 		ctx.throw('Not allowed.', 401);
 	}
+
 	try {
 		await next();
 	} catch (error) {
@@ -15,7 +16,7 @@ export default async function(ctx, next) {
 
 		ctx.body = {
 			response_type: 'ephemeral',
-			text: ':boom: ' + error.message || error,
+			text: ':boom: ' + error.message || error + ' :fire:',
 		}
 	}
 }

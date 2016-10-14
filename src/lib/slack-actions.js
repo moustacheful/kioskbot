@@ -8,7 +8,7 @@ const actions = {
 		const userId = ctx.request.body.user_id;
 		const debt = await redis.hgetAsync('tab', userId)
 
-		ctx.body = debt;
+		ctx.body = `Debes $${debt}`;
 	},
 
 	'update': async (ctx) => {
@@ -17,23 +17,22 @@ const actions = {
 	},
 
 	'stock': async (ctx) => {
+		const chunks = _.chunk(await kiosk.getStock(), 5);
+		const attachments =  _.map(chunks, (chunk) => ({
+			callback_id: 'purchase',
+			color: '#3AA3E3',
+			attachment_type: 'default',
+			actions: _.map(chunk, item => ({
+				name: item.item,
+				text: `${item.item} ($${item.precio})`,
+				type: 'button',
+				value: item.slug,
+			})),
+		}));
+
 		ctx.body = {
 			text: 'Kioskbot',
-			attachments: [{
-				text: 'Inventario:',
-				fallback: '??',
-				callback_id: 'purchase',
-				color: '#3AA3E3',
-				attachment_type: 'default',
-				actions: _.map(await kiosk.getStock(), item => {
-					return {
-						name: item.item,
-						text: `${item.item} ($${item.precio})`,
-						type: 'button',
-						value: item.slug,
-					}
-				}),
-			}],
+			attachments
 		}
 	},
 

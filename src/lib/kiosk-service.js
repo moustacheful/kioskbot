@@ -17,21 +17,31 @@ class KioskService {
 
 	async updateStock(newStock, revisionData) {
 		const isUpToDate = await this.isUpToDate(revisionData)
-		if (isUpToDate) return console.log('Is up to date!');
+		//if (isUpToDate) return console.log('Is up to date!');
 		const operations = _.map(newStock, row => ['hmset', `inventory:${row.slug}`, row]);
 
-		const inStock = _.reduce(operations, (accumulator, operation) => {
-			if(operation[2].stock_actual > 0){
-				accumulator.push(operation[1])
+		await redis.multi(operations).execAsync();
+		await this.updateAvailableList();
+	}
+
+	async updateAvailableList(){
+		const keys = await redis.keysAsync('inventory:*');
+		let operations = _.map(keys, key => ['hgetall', key]);
+		const products = await redis.multi(operations).execAsync();
+
+		const inStock = _.reduce(products, (accumulator, product) => {
+			if(product.stock_actual > 0){
+				accumulator.push(`inventory:${product.slug}`);
 			}
 
 			return accumulator;
 		},[]);
 
+		operations = [];
 		operations.push(['del','in-stock'])
 		operations.push(['sadd','in-stock', inStock]);
 
-		await redis.multi(operations).execAsync();
+		return redis.multi(operations).execAsync();
 	}
 
 	async purchase(productSlug, purchaser, quantity = 1){
@@ -54,11 +64,14 @@ class KioskService {
 			}],
 		];
 
-		const results = await redis.multi(operations).execAsync();
-		googleSheet.update(product.index, 2, results[0]);
+		const [stockLeft, debt, purchase] = await redis.multi(operations).execAsync();
+		
+		// Exec async tasks.
+		this.updateAvailableList();
+		googleSheet.update(product.index, 2, stockLeft);
 
 		return { 
-			debt: await redis.hgetAsync('tab', purchaser),
+			debt,
 			product: await redis.hgetallAsync(productKey)
 		};
 	}
