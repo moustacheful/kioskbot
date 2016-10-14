@@ -1,8 +1,21 @@
 import _ from 'lodash';
 import redis from 'src/lib/redis';
 import kiosk from 'src/lib/kiosk-service';
+import googleSheet from 'src/lib/google-sheet';
 
 const actions = {
+	'deuda': async (ctx) => {
+		const userId = ctx.request.body.user_id;
+		const debt = await redis.hgetAsync('tab', userId)
+
+		ctx.body = debt;
+	},
+
+	'update': async (ctx) => {
+		await googleSheet.read();
+		ctx.body = "ok!";
+	},
+
 	'stock': async (ctx) => {
 		ctx.body = {
 			text: 'Kioskbot',

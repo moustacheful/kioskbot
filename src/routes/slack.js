@@ -44,7 +44,8 @@ router.use(bodyParser());
 router.use(SlackMiddleware);
 
 router.post('/', async (ctx) => {
-	await slackActions('stock', ctx);
+	const action = ctx.request.body.text || 'stock';
+	await slackActions(action, ctx);
 })
 
 router.post('/action', async (ctx) => {
