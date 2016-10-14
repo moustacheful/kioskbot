@@ -8,5 +8,14 @@ export default async function(ctx, next) {
 	){
 		ctx.throw('Not allowed.', 401);
 	}
-	await next();
+	try {
+		await next();
+	} catch (error) {
+		if (error.status) ctx.status = error.status;
+
+		ctx.body = {
+			response_type: 'ephemeral',
+			text: ':boom: ' + error.message || error,
+		}
+	}
 }

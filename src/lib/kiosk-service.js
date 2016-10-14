@@ -56,8 +56,11 @@ class KioskService {
 
 		const results = await redis.multi(operations).execAsync();
 		googleSheet.update(product.index, 2, results[0]);
-		const debt = await redis.hgetAsync('tab', purchaser);
-		return { debt };
+
+		return { 
+			debt: await redis.hgetAsync('tab', purchaser),
+			product: await redis.hgetallAsync(productKey)
+		};
 	}
 
 	async isUpToDate(incoming) {

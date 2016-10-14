@@ -38,16 +38,19 @@ const actions = {
 	},
 
 	'purchase': async (ctx, payload) => {
-		console.log(payload)
 		const productSlug = _.first(payload.actions).value;
-		console.log(productSlug)
-		const { debt } = await kiosk.purchase(productSlug, payload.user.id);
-		ctx.body = `Listo! Debes, ${debt}`;
+		const { debt, product } = await kiosk.purchase(productSlug, payload.user.id);
+		ctx.body = {
+			response_type: 'ephemeral',
+			text: `Compraste ${product.item}!`,
+			attachments: [{
+				text: `Debes $${debt} de momento.`
+			}]
+		}
 	}
 };
 
 export default async function(action, ctx, ...rest){
-	console.log(...rest);
 	if (!actions[action]) {
 		ctx.throw(`Invalid action: ${action}`, 404);
 	}
