@@ -16,8 +16,10 @@ const adminActions = {
 	'deudas': async (ctx) => {
 		const tabs = await kiosk.getOutstandingTabs();
 		const list = _.map(tabs, (tab) => {
-			return `- *${tab.name}* - ${numeral(tab.amount).format()}`;
+			return `- *${tab.name}*   ${numeral(tab.amount).format()}`;
 		}).join('\n');
+		
+		if (!list.length) list.push(`No hay usuarios con deudas.`);
 
 		ctx.body = {
 			text: 'Usuarios con deudas:',
@@ -96,9 +98,14 @@ const actions = {
 		const { debt, product } = await kiosk.purchase(productSlug, payload.user);
 		
 		ctx.body = {
-			text: `Compraste ${product.item}!`,
+			text: `Compra exitosa!`,
 			attachments: [{
-				text: `Debes ${numeral(debt).format()} de momento.`
+				text: `Compraste ${product.item}.`,
+				color: 'good',
+				fields: [
+					{ short: true, title: 'Precio', value: numeral(product.precio).format() },
+					{ short: true, title: 'Deuda', value: numeral(debt).format() },					
+				]
 			}]
 		};
 	}
