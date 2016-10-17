@@ -2,9 +2,10 @@ import Router from 'koa-router';
 import qs from 'querystring';
 import bodyParser from 'koa-bodyparser';
 import _ from 'lodash';
+import fetch from 'node-fetch';
 import SlackMiddleware from 'src/middleware/slack';
 import slackActions from 'src/lib/slack-actions';
-import fetch from 'node-fetch';
+import redis from 'src/lib/redis';
 
 const authRouter = Router({ prefix: '/slack/auth' });
 
