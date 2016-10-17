@@ -64,7 +64,8 @@ class GoogleSheet extends EventEmitter {
 				return row;	
 			});
 
-			this.emit('stockUpdated', data, lastRevision);		
+			this.emit('stockUpdated', data, lastRevision);	
+			return data;	
 		} catch (err){
 			console.log('Google sheets fetch failed!:', err.message)
 		}

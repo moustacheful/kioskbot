@@ -44,13 +44,13 @@ router.use(bodyParser());
 router.use(SlackMiddleware);
 
 router.post('/', async (ctx) => {
-	const action = ctx.request.body.text || 'stock';
-	await slackActions(action, ctx);
+	let [action] = ctx.request.body.text.split(' ');
+	await slackActions(action || 'stock', ctx);
 })
 
 router.post('/action', async (ctx) => {
-	const payload = JSON.parse(ctx.request.body.payload);
-	await slackActions(payload.callback_id, ctx, payload);
+	const action = ctx.state.slack.callback_id;
+	await slackActions(action, ctx);
 });
 
 export default function(app) {

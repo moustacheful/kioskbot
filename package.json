@@ -30,6 +30,7 @@
     "mongoose": "^4.6.3",
     "node-fetch": "^1.6.3",
     "node-redis": "^0.1.7",
+    "numeral": "^1.5.3",
     "pm2": "^2.0.18",
     "redis": "^2.6.2",
     "request-promise": "^4.1.1",

@@ -1,21 +1,70 @@
 import _ from 'lodash';
+import numeral from 'numeral';
+import numeralES from 'numeral/languages/es';
 import redis from 'src/lib/redis';
 import kiosk from 'src/lib/kiosk-service';
 import googleSheet from 'src/lib/google-sheet';
 
+numeral.language('es', numeralES);
+numeral.language('es');
+numeral.defaultFormat('$0,0');
+
 const actions = {
+
+	/**
+	 * Returns an ordered list with all outstanding tabs
+	 */
+	'deudas': async (ctx) => {
+		const tabs = await kiosk.getOutstandingTabs();
+		const list = _.map(tabs, (tab) => {
+			return `- *${tab.name}* - ${numeral(tab.amount).format()}`;
+		}).join('\n');
+
+		ctx.body = {
+			text: 'Usuarios con deudas:',
+			attachments: [{ text: list }],
+		};
+	},
+
+	/**
+	 * Pay a users's tab
+	 */
+	'pagar': async (ctx) => {
+		const [, user, amount] = ctx.state.slack.text.split(' ');
+		const result = await kiosk.payTabForUser(user.replace('@', ''), amount)
+
+		ctx.body = {
+			text: `Deuda para *${user}* pagada.`,
+			attachments: [{
+				fields: [
+					{ short: true, title: 'Pagado', value: numeral(amount).format() },
+					{ short: true, title: 'Restante', value: numeral(result.remainder).format() },
+				]
+			}]
+		}
+	},
+
+	/**
+	 * Returns requesting user's tab
+	 */
 	'deuda': async (ctx) => {
-		const userId = ctx.request.body.user_id;
-		const debt = await redis.hgetAsync('tab', userId)
+		const userId = ctx.state.slack.user.id;
+		const tab = await kiosk.getTabById(userId);
 
-		ctx.body = `Debes $${debt}`;
+		ctx.body = tab ? `Debes $${numeral(tab.amount).format()}` : 'No registras deuda';
 	},
 
+	/**
+	 * Updates the kiosk
+	 */
 	'update': async (ctx) => {
-		await googleSheet.read();
-		ctx.body = "ok!";
+		const products = await googleSheet.read();
+		ctx.body = `Ok! ${products.length} productos ingresados.`;
 	},
 
+	/**
+	 * Gives out a list of the available products.
+	 */
 	'stock': async (ctx) => {
 		const chunks = _.chunk(await kiosk.getStock(), 5);
 		const attachments =  _.map(chunks, (chunk) => ({
@@ -24,28 +73,32 @@ const actions = {
 			attachment_type: 'default',
 			actions: _.map(chunk, item => ({
 				name: item.item,
-				text: `${item.item} ($${item.precio})`,
+				text: `${item.item} (${numeral(item.precio).format()})`,
 				type: 'button',
 				value: item.slug,
 			})),
 		}));
 
 		ctx.body = {
-			text: 'Kioskbot',
+			text: 'Kioskbot - en stock:',
 			attachments
-		}
+		};
 	},
 
-	'purchase': async (ctx, payload) => {
+	/**
+	 * Purchase and item.
+	 */
+	'purchase': async (ctx) => {
+		const payload = ctx.state.slack;
 		const productSlug = _.first(payload.actions).value;
-		const { debt, product } = await kiosk.purchase(productSlug, payload.user.id);
+		const { debt, product } = await kiosk.purchase(productSlug, payload.user);
+		
 		ctx.body = {
-			response_type: 'ephemeral',
 			text: `Compraste ${product.item}!`,
 			attachments: [{
-				text: `Debes $${debt} de momento.`
+				text: `Debes ${numeral(debt).format()} de momento.`
 			}]
-		}
+		};
 	}
 };
 

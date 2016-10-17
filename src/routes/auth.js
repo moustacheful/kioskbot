@@ -29,7 +29,7 @@ router.get('/auth', async (ctx) => {
 });
 
 router.get('/auth/callback', async (ctx) => {
-	const token = await oAuth.getTokenAsync(ctx.query.code);
+	const [token] = await oAuth.getTokenAsync(ctx.query.code);
 	await redis.setAsync('token:google', JSON.stringify(token));
 	
 	ctx.body = await redis.getAsync('token:google');
