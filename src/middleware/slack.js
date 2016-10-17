@@ -25,12 +25,13 @@ export default async function(ctx, next) {
 		ctx.state.slack = incoming;
 
 		await next();
-		
+
 		if (_.isString(ctx.body)) ctx.body = { text: ctx.body };
 		
 		ctx.body = {
 			mrkdwn: true,
 			response_type: 'ephemeral',
+			footer: 'Kioskbot',
 			ts: Date.now(),
 			...ctx.body
 		}
