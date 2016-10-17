@@ -9,8 +9,7 @@ numeral.language('es', numeralES);
 numeral.language('es');
 numeral.defaultFormat('$0,0');
 
-const actions = {
-
+const adminActions = {
 	/**
 	 * Returns an ordered list with all outstanding tabs
 	 */
@@ -22,7 +21,7 @@ const actions = {
 
 		ctx.body = {
 			text: 'Usuarios con deudas:',
-			attachments: [{ text: list }],
+			attachments: [{ text: list, mrkdwn_in: ['text'] }],
 		};
 	},
 
@@ -45,6 +44,16 @@ const actions = {
 	},
 
 	/**
+	 * Updates the kiosk
+	 */
+	'update': async (ctx) => {
+		const products = await googleSheet.read();
+		ctx.body = `Ok! ${products.length} productos ingresados.`;
+	},
+};
+
+const actions = {
+	/**
 	 * Returns requesting user's tab
 	 */
 	'deuda': async (ctx) => {
@@ -54,13 +63,6 @@ const actions = {
 		ctx.body = tab ? `Debes ${numeral(tab.amount).format()} :rat:` : 'No registras deuda';
 	},
 
-	/**
-	 * Updates the kiosk
-	 */
-	'update': async (ctx) => {
-		const products = await googleSheet.read();
-		ctx.body = `Ok! ${products.length} productos ingresados.`;
-	},
 
 	/**
 	 * Gives out a list of the available products.
@@ -103,9 +105,17 @@ const actions = {
 };
 
 export default async function(action, ctx, ...rest){
-	if (!actions[action]) {
-		ctx.throw(`Invalid action: ${action}`, 404);
-	}
+	let user = ctx.state.slack.user;
+	let selectedAction = actions[action];
 
-	return await actions[action](ctx, ...rest);
+	if (!selectedAction && adminActions[action]) {
+		if(!_.includes(process.env.SLACK_ADMINS.split(','), user.name)) {
+			ctx.throw('No estás autorizado para ejecutar este comando.', 401);			
+		}
+		selectedAction = adminActions[action];
+	} 
+
+	if (!selectedAction) ctx.throw(`Comando inválido: ${action}`, 404);
+
+	return await selectedAction(ctx, ...rest);
 }
