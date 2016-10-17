@@ -27,7 +27,13 @@ export default async function(ctx, next) {
 		await next();
 		
 		if (_.isString(ctx.body)) ctx.body = { text: ctx.body };
-		ctx.body = { ts: Date.now(), response_type: 'ephemeral', ...ctx.body }
+		
+		ctx.body = {
+			mrkdwn: true,
+			response_type: 'ephemeral',
+			ts: Date.now(),
+			...ctx.body
+		}
 
 	} catch (error) {
 		// Handle errors in slack format.
@@ -35,6 +41,7 @@ export default async function(ctx, next) {
 		const template = error.status && error.status == 200 ? '<%= message %>' : ':boom: <%= message %> :fire:';
 
 		ctx.body = {
+			mrkdwn: true,
 			response_type: 'ephemeral',
 			text: _.template(template)({ message: error.message || error }),
 			stack: error.stack && process.env.DEBUG ? error.stack : null

@@ -51,7 +51,7 @@ const actions = {
 		const userId = ctx.state.slack.user.id;
 		const tab = await kiosk.getTabById(userId);
 
-		ctx.body = tab ? `Debes $${numeral(tab.amount).format()}` : 'No registras deuda';
+		ctx.body = tab ? `Debes ${numeral(tab.amount).format()} :rat:` : 'No registras deuda';
 	},
 
 	/**
