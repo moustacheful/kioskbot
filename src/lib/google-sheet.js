@@ -3,7 +3,7 @@ import Promise from 'bluebird';
 import { EventEmitter } from 'events';
 import _ from 'lodash';
 import uuid from 'uuid';
-import redis from './redis';
+import Credential from 'src/models/credential';
 
 const sheets = google.sheets('v4');
 const drive = google.drive('v3');
@@ -29,8 +29,8 @@ class GoogleSheet extends EventEmitter {
 	}
 
 	async getToken(){
-		this.token = await redis.getAsync('token:google');
-		oAuth.setCredentials(JSON.parse(this.token));
+		this.token = await Credential.for('google');
+		oAuth.setCredentials(this.token);
 		google.options({ auth: oAuth });
 	}
 
@@ -46,31 +46,33 @@ class GoogleSheet extends EventEmitter {
 				await drive.revisions.listAsync({
 					fileId: process.env.GSHEET,
 					fields: 'revisions',
-				}).spread(res => res.revisions.pop()),
+				}).then(res => res.revisions.pop()),
 
 				 // Get current data
 				await sheets.spreadsheets.values.getAsync({
 					spreadsheetId: process.env.GSHEET,
 					range: 'Inventario',
-				}).spread(res => res),
+				}).then(res => res),
 			];
 
-			const labels = _.map(sheet.values.shift(), _.snakeCase);
+			const labels = _.map(sheet.values.shift(), _.camelCase);
 			const data = _.map(sheet.values, (row, i) => {
 				row = _.take(row, labels.length);
 				row = _.zipObject(labels, row);
 				row.slug = _.kebabCase(row.item);
 				row.index = i;
-				return row;	
+				return row;
 			});
 
-			this.emit('stockUpdated', data, lastRevision);	
-			return data;	
+
+			this.emit('stockUpdated', data, lastRevision);
+			return data;
 		} catch (err){
 			console.log('Google sheets fetch failed!:', err.message)
+			console.error(err.stack);
 		}
 	}
-	
+
 	update(row, col, val) {
 		const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 		col = alphabet.substr(col,1);
@@ -78,7 +80,7 @@ class GoogleSheet extends EventEmitter {
 		const range = `Inventario!${col}${row}:${col}${row}`;
 		this._queue.push({
 			range,
-			values: [[val]]	
+			values: [[val]]
 		});
 		this._execQueue();
 	}

@@ -1,4 +1,5 @@
 import _ from 'lodash';
+import User from 'src/models/user';
 import { nestify } from 'src/lib/utils';
 
 export default async function(ctx, next) {
@@ -23,11 +24,12 @@ export default async function(ctx, next) {
 
 		// Pass the state for the rest of the application
 		ctx.state.slack = incoming;
+		ctx.state.user = User.findOneOrCreate({ sid: incoming.user.id });
 
 		await next();
 
 		if (_.isString(ctx.body)) ctx.body = { text: ctx.body };
-		
+
 		ctx.body = {
 			mrkdwn: true,
 			response_type: 'ephemeral',

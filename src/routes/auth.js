@@ -1,7 +1,7 @@
 import Promise from 'bluebird';
 import google from 'googleapis';
 import Router from 'koa-router';
-import redis from 'src/lib/redis';
+import Credential from 'src/models/credential';
 
 Promise.promisifyAll(google.auth.OAuth2.prototype);
 
@@ -29,10 +29,10 @@ router.get('/auth', async (ctx) => {
 });
 
 router.get('/auth/callback', async (ctx) => {
-	const [token] = await oAuth.getTokenAsync(ctx.query.code);
-	await redis.setAsync('token:google', JSON.stringify(token));
-	
-	ctx.body = await redis.getAsync('token:google');
+	const token = await oAuth.getTokenAsync(ctx.query.code);
+	await Credential.create({ service: 'google', payload: token });
+
+	ctx.body = await Credential.for('google');
 });
 
 export default function (app) {

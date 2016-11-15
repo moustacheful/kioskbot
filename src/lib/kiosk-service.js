@@ -3,6 +3,9 @@ import Promise from 'bluebird';
 import redis from './redis';
 import googleSheet from 'src/lib/google-sheet';
 import uuid from 'uuid';
+import Credential from 'src/models/credential';
+import Product from 'src/models/product';
+import Purchase from 'src/models/purchase';
 
 class KioskService {
 	constructor(){
@@ -10,53 +13,45 @@ class KioskService {
 	}
 
 	async getStock(){
-		const keys = await redis.smembersAsync('in-stock');
-		const operations = _.map(keys, key => ['hgetall', key]);
-
-		return await redis.multi(operations).execAsync();
+		return Product.find({ stock: { $gt: 0 } });
 	}
 
 	async updateStock(newStock, revisionData) {
 		const isUpToDate = await this.isUpToDate(revisionData)
-		if (isUpToDate) return console.log('Is up to date!');
-		
-		const operations = _.map(newStock, row => ['hmset', `inventory:${row.slug}`, row]);
+		//if (isUpToDate) return console.log('Is up to date!');
 
-		await redis.multi(operations).execAsync();
-		await this.updateAvailableList();
+		await Product.remove({});
+		await Promise.map(newStock, row => Product.create(row));
 	}
 
-	async updateAvailableList(){
-		const keys = await redis.keysAsync('inventory:*');
-		let operations = _.map(keys, key => ['hgetall', key]);
-		const products = await redis.multi(operations).execAsync();
-
-		const inStock = _.reduce(products, (accumulator, product) => {
-			if(product.stock_actual > 0){
-				accumulator.push(`inventory:${product.slug}`);
-			}
-
-			return accumulator;
-		},[]);
-
-		operations = [];
-		operations.push(['del','in-stock'])
-		operations.push(['sadd','in-stock', inStock]);
-
-		return redis.multi(operations).execAsync();
-	}
-
-	async purchase(productSlug, user, quantity = 1){
+	async purchase(slug, user, quantity = 1){
 		if (!user) throw new Error('No user specified.');
 
-		const productKey = `inventory:${_.kebabCase(productSlug)}`;
-		const product = await redis.hgetallAsync(productKey);
+		const product = await Product.findOne({ slug });
 
 		if (!product) throw new Error('Product not available.');
-		if (product.stock_actual < 1) throw new Error('Product out of stock.');
+		if (product.stockActual < 1) throw new Error('Product out of stock.');
 
+		product.update({
+			$inc: {
+				stockActual: -1
+			}
+		});
+
+		user.update({
+			$inc: {
+				tab: product.precio
+			}
+		});
+
+		Purchase.create({
+			product: product.item,
+			amount: product.precio * quantity,
+			quantity: quantity,
+			user: user,
+		})
 		const operations = [
-			['hincrby', productKey, 'stock_actual', -1],
+			['hincrby', productKey, 'stockActual', -1],
 			['hincrby', 'tab', user.id, product.precio],
 			['hmset', `purchase:${uuid.v4()}`, {
 				productKey,
@@ -68,60 +63,42 @@ class KioskService {
 		];
 
 		const [stockLeft, debt, purchase] = await redis.multi(operations).execAsync();
-		
+
 		// Exec async tasks.
-		this.updateAvailableList();
 		googleSheet.update(product.index, 2, stockLeft);
 
-		return { 
+		return {
 			debt,
 			product: await redis.hgetallAsync(productKey)
 		};
 	}
 
 	async payTabForUser (name, amount) {
-		const tabs = await this.getTabs();
-		const tab = _.find(tabs, { name });
+		const user = User.find({ name });
 
-		if (!tab) throw new Error(`Usuario ${name} no existe en los registros.`);
-		if (tab.amount - amount < 0) throw new Error(`Monto sobrepasa la deuda. _(hint: dejar vacío para pagar todo)_`);
-		if (!amount) amount = tab.amount;
-		const remainder = await redis.hincrbyAsync('tab', tab.id, -amount);
+		if (!user) throw new Error(`Usuario ${name} no existe en los registros.`);
+		if (user.tab - amount < 0) throw new Error(`Monto sobrepasa la deuda. _(hint: dejar vacío para pagar todo)_`);
+		if (!amount) amount = user.tab;
 
-		return { ...tab, paid: amount, remainder };
-	}
-
-	async getTabByName (name) {
-		const tabs = await this.getTabs();
-		return _.find(tabs, { name });
-	}
-	
-	async getTabById (userId) {
-		return Promise.props({
-			name: redis.hgetAsync('users', userId),
-			amount: redis.hgetAsync('tab', userId),
-			id: userId
+		await user.update({
+			$incr: {
+				tab: -amount
+			}
 		});
+
+		const remainder = user.tab;
+
+		return { paid: amount, remainder };
 	}
 
-	async getOutstandingTabs() {
-		const tabs = await this.getTabs();
-		return _.filter(tabs, (tab) => tab.amount > 0);
+	async getTabById (userId) {
+		return User.findOne({ sid: userId });
 	}
 
-	async getTabs() {
-		const [tabs, users] = await Promise.all([
-			redis.hgetallAsync('tab'),
-			redis.hgetallAsync('users')
-		]);
-
-		return _.chain(tabs)
-			.reduce((acc, amount, id) => {
-				acc.push({ amount, id, name: users[id] })
-				return acc;
-			}, [])
-			.orderBy('amount', 'desc')
-			.value();
+	getOutstandingTabs() {
+		return User
+			.find({ tab: { $gt: 0 } })
+			.sort({ tab: 1 });
 	}
 
 	async isUpToDate(incoming) {
@@ -131,7 +108,7 @@ class KioskService {
 		}
 		incoming.lastModifyingUser = incoming.lastModifyingUser.displayName;
 		await redis.hmset('app:last-revision', incoming);
-		
+
 		return false;
 	}
 }

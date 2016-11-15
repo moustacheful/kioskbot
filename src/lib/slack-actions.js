@@ -18,7 +18,7 @@ const adminActions = {
 		const list = _.map(tabs, (tab) => {
 			return `- *${tab.name}*   ${numeral(tab.amount).format()}`;
 		}).join('\n');
-		
+
 		if (!list.length) list.push(`No hay usuarios con deudas.`);
 
 		ctx.body = {
@@ -59,10 +59,9 @@ const actions = {
 	 * Returns requesting user's tab
 	 */
 	'deuda': async (ctx) => {
-		const userId = ctx.state.slack.user.id;
-		const tab = await kiosk.getTabById(userId);
+		const user = ctx.state.user;
 
-		ctx.body = tab ? `Debes ${numeral(tab.amount).format()} :rat:` : 'No registras deuda';
+		ctx.body = user.tab ? `Debes ${numeral(user.tab).format()} :rat:` : 'No registras deuda';
 	},
 
 
@@ -96,7 +95,7 @@ const actions = {
 		const payload = ctx.state.slack;
 		const productSlug = _.first(payload.actions).value;
 		const { debt, product } = await kiosk.purchase(productSlug, payload.user);
-		
+
 		ctx.body = {
 			text: `Compra exitosa!`,
 			attachments: [{
@@ -104,7 +103,7 @@ const actions = {
 				color: 'good',
 				fields: [
 					{ short: true, title: 'Precio', value: numeral(product.precio).format() },
-					{ short: true, title: 'Deuda', value: numeral(debt).format() },					
+					{ short: true, title: 'Deuda', value: numeral(debt).format() },
 				]
 			}]
 		};
@@ -117,10 +116,10 @@ export default async function(action, ctx, ...rest){
 
 	if (!selectedAction && adminActions[action]) {
 		if(!_.includes(process.env.SLACK_ADMINS.split(','), user.name)) {
-			ctx.throw('No estás autorizado para ejecutar este comando.', 401);			
+			ctx.throw('No estás autorizado para ejecutar este comando.', 401);
 		}
 		selectedAction = adminActions[action];
-	} 
+	}
 
 	if (!selectedAction) ctx.throw(`Comando inválido: ${action}`, 404);
 

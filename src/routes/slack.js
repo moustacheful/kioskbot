@@ -5,7 +5,7 @@ import _ from 'lodash';
 import fetch from 'node-fetch';
 import SlackMiddleware from 'src/middleware/slack';
 import slackActions from 'src/lib/slack-actions';
-import redis from 'src/lib/redis';
+import Credential from 'src/models/credential';
 
 const authRouter = Router({ prefix: '/slack/auth' });
 
@@ -34,9 +34,8 @@ authRouter.get('/callback', async (ctx) => {
 	}).then(res => res.json());
 
 	ctx.assert(res.ok, 'Slack login failed.', 401);
-	
-	await redis.setAsync('token:slack', res.access_token);
-	ctx.body = await redis.getAsync('token:slack');
+	await Credential.create({ service: 'slack', payload: res.access_token });
+	ctx.body = await Credential.for('slack');
 });
 
 const router = Router({ prefix: '/slack' });

@@ -4,7 +4,9 @@ import ErrorHandler from 'src/middleware/error-handler';
 import auth from 'src/routes/auth';
 import slack from 'src/routes/slack';
 import common from 'src/routes/common';
+import 'src/lib/mongodb';
 
+// Create the app instance
 const app = new Koa();
 
 // Middleware
