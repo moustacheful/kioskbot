@@ -53,7 +53,7 @@ const adminActions = {
 	},
 
 	'info': async (ctx) => {
-		const [, username, purchasesCount] = ctx.state.slack.text.split(' ');
+		const [, username, purchasesCount = 3] = ctx.state.slack.text.split(' ');
 		const { user, purchases } = await kiosk.getTabForUser(username.replace('@', ''), purchasesCount);
 
 		const attachments = _.map(purchases, (purchase) => ({
