@@ -54,6 +54,8 @@ const adminActions = {
 
 	'info': async (ctx) => {
 		const [, username, purchasesCount = 3] = ctx.state.slack.text.split(' ');
+		if (!username) ctx.throw('Debes especificar un usuario. Ej.: */kioskbot info @usuario*');
+
 		const { user, purchases } = await kiosk.getTabForUser(username.replace('@', ''), purchasesCount);
 
 		const attachments = _.map(purchases, (purchase) => ({
