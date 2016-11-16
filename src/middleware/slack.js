@@ -24,7 +24,7 @@ export default async function(ctx, next) {
 
 		// Pass the state for the rest of the application
 		ctx.state.slack = incoming;
-		ctx.state.user = User.findOneOrCreate({ sid: incoming.user.id });
+		ctx.state.user = await User.findOneOrCreateFromSlack(incoming.user);
 
 		await next();
 

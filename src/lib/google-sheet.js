@@ -2,7 +2,6 @@ import google from 'googleapis';
 import Promise from 'bluebird';
 import { EventEmitter } from 'events';
 import _ from 'lodash';
-import uuid from 'uuid';
 import Credential from 'src/models/credential';
 
 const sheets = google.sheets('v4');

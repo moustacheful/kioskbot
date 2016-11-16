@@ -1,7 +1,6 @@
 import _ from 'lodash';
 import numeral from 'numeral';
 import numeralES from 'numeral/languages/es';
-import redis from 'src/lib/redis';
 import kiosk from 'src/lib/kiosk-service';
 import googleSheet from 'src/lib/google-sheet';
 
@@ -14,9 +13,9 @@ const adminActions = {
 	 * Returns an ordered list with all outstanding tabs
 	 */
 	'deudas': async (ctx) => {
-		const tabs = await kiosk.getOutstandingTabs();
-		const list = _.map(tabs, (tab) => {
-			return `- *${tab.name}*   ${numeral(tab.amount).format()}`;
+		const users = await kiosk.getOutstandingTabs();
+		const list = _.map(users, (user) => {
+			return `- *${user.username}*   ${numeral(user.debt).format()}`;
 		}).join('\n');
 
 		if (!list.length) list.push(`No hay usuarios con deudas.`);
@@ -38,7 +37,7 @@ const adminActions = {
 			text: `Deuda para *${user}* pagada.`,
 			attachments: [{
 				fields: [
-					{ short: true, title: 'Pagado', value: numeral(amount).format() },
+					{ short: true, title: 'Pagado', value: numeral(result.paid).format() },
 					{ short: true, title: 'Restante', value: numeral(result.remainder).format() },
 				]
 			}]
@@ -61,7 +60,7 @@ const actions = {
 	'deuda': async (ctx) => {
 		const user = ctx.state.user;
 
-		ctx.body = user.tab ? `Debes ${numeral(user.tab).format()} :rat:` : 'No registras deuda';
+		ctx.body = user.debt ? `Debes ${numeral(user.debt).format()} :rat:` : 'No registras deuda :tada:';
 	},
 
 
@@ -94,7 +93,7 @@ const actions = {
 	'purchase': async (ctx) => {
 		const payload = ctx.state.slack;
 		const productSlug = _.first(payload.actions).value;
-		const { debt, product } = await kiosk.purchase(productSlug, payload.user);
+		const { debt, product } = await kiosk.purchase(productSlug, ctx.state.user);
 
 		ctx.body = {
 			text: `Compra exitosa!`,

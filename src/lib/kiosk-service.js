@@ -1,11 +1,10 @@
 import _ from 'lodash';
 import Promise from 'bluebird';
-import redis from './redis';
 import googleSheet from 'src/lib/google-sheet';
-import uuid from 'uuid';
 import Credential from 'src/models/credential';
 import Product from 'src/models/product';
 import Purchase from 'src/models/purchase';
+import User from 'src/models/user';
 
 class KioskService {
 	constructor(){
@@ -13,15 +12,15 @@ class KioskService {
 	}
 
 	async getStock(){
-		return Product.find({ stock: { $gt: 0 } });
+		return Product.find({ stockActual: { $gt: 0 } });
 	}
 
 	async updateStock(newStock, revisionData) {
-		const isUpToDate = await this.isUpToDate(revisionData)
-		//if (isUpToDate) return console.log('Is up to date!');
-
+		// Remove all products
 		await Product.remove({});
+		// And insert them again
 		await Promise.map(newStock, row => Product.create(row));
+		console.log('Products updated!');
 	}
 
 	async purchase(slug, user, quantity = 1){
@@ -32,63 +31,55 @@ class KioskService {
 		if (!product) throw new Error('Product not available.');
 		if (product.stockActual < 1) throw new Error('Product out of stock.');
 
-		product.update({
-			$inc: {
-				stockActual: -1
-			}
-		});
+		await Promise.all([
+			product.update({
+				$inc: {
+					stockActual: -1
+				}
+			}),
+			user.update({
+				$inc: {
+					debt: product.precio
+				}
+			}),
+			Purchase.create({
+				product: product.item,
+				amount: product.precio * quantity,
+				quantity: quantity,
+				user: user,
+			})
+		]);
 
-		user.update({
-			$inc: {
-				tab: product.precio
-			}
-		});
+		const [updatedUser, updatedProduct] = await Promise.all([
+			User.findById(user._id),
+			Product.findById(product._id)
+		]);
 
-		Purchase.create({
-			product: product.item,
-			amount: product.precio * quantity,
-			quantity: quantity,
-			user: user,
-		})
-		const operations = [
-			['hincrby', productKey, 'stockActual', -1],
-			['hincrby', 'tab', user.id, product.precio],
-			['hmset', `purchase:${uuid.v4()}`, {
-				productKey,
-				quantity,
-				user: user.id,
-				timestamp: Date.now()
-			}],
-			['hset', 'users', user.id, user.name],
-		];
-
-		const [stockLeft, debt, purchase] = await redis.multi(operations).execAsync();
-
+		const { index, stockActual } = updatedProduct;
 		// Exec async tasks.
-		googleSheet.update(product.index, 2, stockLeft);
+		googleSheet.update(index, 2, stockActual);
 
 		return {
-			debt,
-			product: await redis.hgetallAsync(productKey)
+			debt: updatedUser.debt,
+			product: updatedProduct
 		};
 	}
 
-	async payTabForUser (name, amount) {
-		const user = User.find({ name });
+	async payTabForUser (username, amount) {
+		const user = await User.findOne({ username });
 
-		if (!user) throw new Error(`Usuario ${name} no existe en los registros.`);
-		if (user.tab - amount < 0) throw new Error(`Monto sobrepasa la deuda. _(hint: dejar vacío para pagar todo)_`);
-		if (!amount) amount = user.tab;
+		if (!user) throw new Error(`Usuario ${username} no existe en los registros.`);
+		if (!amount) amount = user.debt;
+		if (user.debt - amount < 0) throw new Error(`Monto sobrepasa la deuda. _(hint: dejar vacío para pagar todo)_`);
 
 		await user.update({
-			$incr: {
-				tab: -amount
+			$inc: {
+				debt: -amount
 			}
 		});
 
-		const remainder = user.tab;
-
-		return { paid: amount, remainder };
+		const updatedUser = await User.findById(user._id);
+		return { paid: amount, remainder: updatedUser.debt };
 	}
 
 	async getTabById (userId) {
@@ -97,11 +88,14 @@ class KioskService {
 
 	getOutstandingTabs() {
 		return User
-			.find({ tab: { $gt: 0 } })
-			.sort({ tab: 1 });
+			.find({ debt: { $gt: 0 } })
+			.sort({ debt: -1 });
 	}
 
 	async isUpToDate(incoming) {
+		// Currently unused;
+		return true;
+		/*
 		const lastRevision = await redis.hgetallAsync('app:last-revision');
 		if (lastRevision && incoming.id === lastRevision.id){
 			return true;
@@ -110,6 +104,7 @@ class KioskService {
 		await redis.hmset('app:last-revision', incoming);
 
 		return false;
+		*/
 	}
 }
 

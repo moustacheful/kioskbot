@@ -7,7 +7,7 @@ const userSchema = new mongoose.Schema({
 		unique: true,
 	},
 	username: String,
-	tab: {
+	debt: {
 		type: Number,
 		required: true,
 		default: 0,
@@ -17,7 +17,11 @@ const userSchema = new mongoose.Schema({
 });
 
 // Static functions
-// userSchema.statics.fn = function (args) {};
+userSchema.statics.findOneOrCreateFromSlack = async function (data) {
+	let user = await this.findOne({ sid: data.id });
+	if (!user) user = await this.create({ sid: data.id, username: data.name });
+	return user;
+};
 
 // Instance methods
 userSchema.methods.getPurchases = function () {};
