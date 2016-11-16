@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import Purchase from './purchase';
 
 const userSchema = new mongoose.Schema({
 	sid: {
@@ -24,6 +25,15 @@ userSchema.statics.findOneOrCreateFromSlack = async function (data) {
 };
 
 // Instance methods
-userSchema.methods.getPurchases = function () {};
+userSchema.methods.getPurchases = function (count = 3) {
+	return Purchase
+		.find({ user: this._id })
+		.sort({ createdAt: -1 })
+		.limit(parseInt(count));
+};
+
+userSchema.virtual('isAdmin').get(function () {
+	return process.env.SLACK_ADMINS.split(',').includes(this.username);
+});
 
 export default mongoose.model('User', userSchema);

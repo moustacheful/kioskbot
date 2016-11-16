@@ -65,6 +65,14 @@ class KioskService {
 		};
 	}
 
+	async getTabForUser(username, count) {
+		const user = await User.findOne({ username });
+		if (!user) throw new Error(`Usuario @${username} no existe.`);
+		const purchases = await user.getPurchases(count);
+
+		return { user, purchases };
+	}
+
 	async payTabForUser (username, amount) {
 		const user = await User.findOne({ username });
 
@@ -80,10 +88,6 @@ class KioskService {
 
 		const updatedUser = await User.findById(user._id);
 		return { paid: amount, remainder: updatedUser.debt };
-	}
-
-	async getTabById (userId) {
-		return User.findOne({ sid: userId });
 	}
 
 	getOutstandingTabs() {

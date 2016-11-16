@@ -51,6 +51,34 @@ const adminActions = {
 		const products = await googleSheet.read();
 		ctx.body = `Ok! ${products.length} productos ingresados.`;
 	},
+
+	'info': async (ctx) => {
+		const [, username, purchasesCount] = ctx.state.slack.text.split(' ');
+		const { user, purchases } = await kiosk.getTabForUser(username.replace('@', ''), purchasesCount);
+
+		const attachments = _.map(purchases, (purchase) => ({
+			mrkdwn_in: ['text'],
+			callback_id: 'purchase',
+			attachment_type: 'default',
+			text: `${purchase.product} (${purchase.quantity} un.) *${numeral(purchase.amount).format()}*`,
+			actions: [{
+				name: 'revertir',
+				text: 'Cancelar',
+				type: 'button',
+				style: 'danger',
+			}],
+			footer: 'Compra realizada ',
+			ts: purchase.createdAt.getTime() / 1000
+		}));
+
+		let text = user.debt ? `${username} debe *${numeral(user.debt).format()}* :rat:` : `${username} no registra deuda :tada:`;
+		text+=`\n Últimas ${purchasesCount} compras:`,
+		ctx.body = { text, attachments };
+	},
+
+	cancel: async (ctx) => {
+
+	}
 };
 
 const actions = {
@@ -75,7 +103,7 @@ const actions = {
 			attachment_type: 'default',
 			actions: _.map(chunk, item => ({
 				name: item.item,
-				text: `${item.item} (${numeral(item.precio).format()})`,
+				text: `${numeral(item.precio).format()} | ${item.item}`,
 				type: 'button',
 				value: item.slug,
 			})),
@@ -110,13 +138,11 @@ const actions = {
 };
 
 export default async function(action, ctx, ...rest){
-	let user = ctx.state.slack.user;
+	let user = ctx.state.user;
 	let selectedAction = actions[action];
 
 	if (!selectedAction && adminActions[action]) {
-		if(!_.includes(process.env.SLACK_ADMINS.split(','), user.name)) {
-			ctx.throw('No estás autorizado para ejecutar este comando.', 401);
-		}
+		if(!user.isAdmin) ctx.throw('No estás autorizado para ejecutar este comando.', 401);
 		selectedAction = adminActions[action];
 	}
 

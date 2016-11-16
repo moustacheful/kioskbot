@@ -33,8 +33,6 @@ export default async function(ctx, next) {
 		ctx.body = {
 			mrkdwn: true,
 			response_type: 'ephemeral',
-			footer: 'Kioskbot',
-			ts: Date.now(),
 			...ctx.body
 		}
 
