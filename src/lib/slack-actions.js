@@ -99,7 +99,7 @@ const actions = {
 	 * Gives out a list of the available products.
 	 */
 	'stock': async (ctx) => {
-		const chunks = _.chunk(await kiosk.getStock(), 5);
+		const chunks = _.chunk(await kiosk.getStock(), 3);
 		const attachments =  _.map(chunks, (chunk) => ({
 			callback_id: 'purchase',
 			color: '#3AA3E3',
