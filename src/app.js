@@ -13,7 +13,11 @@ const app = new Koa();
 app.use(ErrorHandler);
 
 // Routes
-auth(app);
+if (process.env.USE_AUTH_ROUTES) {
+	// Slack & Google's auth routes, if needed
+	auth(app);
+}
+
 slack(app);
 common(app);
 
