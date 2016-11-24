@@ -3,6 +3,7 @@ import Router from 'koa-router';
 import bodyParser from 'koa-bodyparser';
 import Promise from 'bluebird';
 import google from 'googleapis';
+import fetch from 'node-fetch';
 import Credential from 'src/models/credential';
 
 

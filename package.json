@@ -8,7 +8,7 @@
     "start": "node ./main",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "",
+  "author": "moustacheful",
   "license": "ISC",
   "dependencies": {
     "app-module-path": "^2.1.0",
