@@ -14,15 +14,16 @@ const adminActions = {
 	 */
 	'deudas': async (ctx) => {
 		const users = await kiosk.getOutstandingTabs();
+
 		const list = _.map(users, (user) => {
 			return `- *${user.username}*   ${numeral(user.debt).format()}`;
-		}).join('\n');
+		});
 
 		if (!list.length) list.push(`No hay usuarios con deudas.`);
 
 		ctx.body = {
 			text: 'Usuarios con deudas:',
-			attachments: [{ text: list, mrkdwn_in: ['text'] }],
+			attachments: [{ text: list.join('\n'), mrkdwn_in: ['text'] }],
 		};
 	},
 
@@ -78,7 +79,7 @@ const adminActions = {
 		ctx.body = { text, attachments };
 	},
 
-	cancel: async (ctx) => {
+	cancelar: async (ctx) => {
 
 	}
 };
@@ -111,9 +112,31 @@ const actions = {
 			})),
 		}));
 
+		attachments.push({
+			callback_id: 'cancel',
+			color: 'danger',
+			actions: [{
+				name: 'cancel',
+				text: 'Cancelar',
+				type: 'button',
+				value: 'cancel',
+				style: 'danger',
+			}]
+		})
+
 		ctx.body = {
 			text: 'Kioskbot - en stock:',
 			attachments
+		};
+	},
+
+	/**
+	 * Cancels an action and deletes the previous message
+	 */
+	'cancel': async (ctx) => {
+		ctx.body = {
+			text: 'Cancelado!',
+			delete_original: true,
 		};
 	},
 

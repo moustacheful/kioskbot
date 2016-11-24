@@ -24,7 +24,6 @@ class GoogleSheet extends EventEmitter {
 		this._queue = [];
 		this._execQueue = _.debounce(this._execQueue, 5000).bind(this)
 		this.getToken();
-		this.start();
 	}
 
 	async getToken(){
