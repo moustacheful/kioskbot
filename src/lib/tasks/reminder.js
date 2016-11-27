@@ -5,7 +5,7 @@ export default function () {
 	User.find({ debt: { $gt: 0 } })
 		.exec()
 		.map(user => {
-			const message = `Oe paga las moneas, debes **${user.formattedDebt}**.`;
+			const message = `Recordatorio amigable de que debes **${user.formattedDebt}** :rat:.`;
 			Slack.chat.postMessage(message, `@${user.username}`);
 		})
 };
