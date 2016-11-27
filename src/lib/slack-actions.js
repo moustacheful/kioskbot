@@ -1,12 +1,7 @@
 import _ from 'lodash';
 import numeral from 'numeral';
-import numeralES from 'numeral/languages/es';
 import kiosk from 'src/lib/kiosk-service';
 import googleSheet from 'src/lib/google-sheet';
-
-numeral.language('es', numeralES);
-numeral.language('es');
-numeral.defaultFormat('$0,0');
 
 const adminActions = {
 	/**
@@ -108,7 +103,7 @@ const actions = {
 				name: item.item,
 				text: `${numeral(item.precio).format()} | ${item.item}`,
 				type: 'button',
-				value: item.slug,
+				value: item._id,
 			})),
 		}));
 
@@ -145,8 +140,8 @@ const actions = {
 	 */
 	'purchase': async (ctx) => {
 		const payload = ctx.state.slack;
-		const productSlug = _.first(payload.actions).value;
-		const { debt, product } = await kiosk.purchase(productSlug, ctx.state.user);
+		const productId = _.first(payload.actions).value;
+		const { debt, product } = await kiosk.purchase(productId, ctx.state.user);
 
 		ctx.body = {
 			text: `Compra exitosa!`,

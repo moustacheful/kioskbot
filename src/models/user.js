@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import numeral from 'numeral';
 import Purchase from './purchase';
 
 const userSchema = new mongoose.Schema({
@@ -18,10 +19,11 @@ const userSchema = new mongoose.Schema({
 });
 
 // Static functions
-userSchema.statics.findOneOrCreateFromSlack = async function (data) {
-	let user = await this.findOne({ sid: data.id });
-	if (!user) user = await this.create({ sid: data.id, username: data.name });
-	return user;
+userSchema.statics.findOneOrUpsertFromSlack = function (data) {
+	return User.findOneAndUpdate({ sid: data.id }, {
+		sid: data.id,
+		username: data.name,
+	}, { upsert: true, new: true, setDefaultsOnInsert: true });
 };
 
 // Instance methods
@@ -32,8 +34,13 @@ userSchema.methods.getPurchases = function (count = 3) {
 		.limit(parseInt(count));
 };
 
+userSchema.virtual('formattedDebt').get(function () {
+	return numeral(this.debt).format();
+});
+
 userSchema.virtual('isAdmin').get(function () {
 	return process.env.SLACK_ADMINS.split(',').includes(this.username);
 });
 
-export default mongoose.model('User', userSchema);
+const User = mongoose.model('User', userSchema);
+export default User;

@@ -30,6 +30,7 @@
     "lodash": "^4.16.4",
     "mongoose": "^4.6.8",
     "node-fetch": "^1.6.3",
+    "node-schedule": "^1.2.0",
     "numeral": "^1.5.3",
     "pm2": "^2.0.18",
     "request-promise": "^4.1.1"

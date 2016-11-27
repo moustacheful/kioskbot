@@ -1,10 +1,10 @@
 import _ from 'lodash';
 import Promise from 'bluebird';
 import googleSheet from 'src/lib/google-sheet';
-import Credential from 'src/models/credential';
 import Product from 'src/models/product';
 import Purchase from 'src/models/purchase';
 import User from 'src/models/user';
+import Slack from 'src/lib/slack';
 
 class KioskService {
 	constructor(){
@@ -23,10 +23,10 @@ class KioskService {
 		console.log('Products updated!');
 	}
 
-	async purchase(slug, user, quantity = 1){
+	async purchase(productId, user, quantity = 1){
 		if (!user) throw new Error('No user specified.');
 
-		const product = await Product.findOne({ slug });
+		const product = await Product.findById(productId);
 
 		if (!product) throw new Error('Product not available.');
 		if (product.stockActual < 1) throw new Error('Product out of stock.');
@@ -58,6 +58,7 @@ class KioskService {
 		const { index, stockActual } = updatedProduct;
 		// Exec async tasks.
 		googleSheet.update(index, 2, stockActual);
+		Slack.chat.postMessage(`${user.username} acaba de comprar ${product.item}`, '#kioskbot');
 
 		return {
 			debt: updatedUser.debt,

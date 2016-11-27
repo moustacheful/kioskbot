@@ -5,7 +5,7 @@ import Promise from 'bluebird';
 import google from 'googleapis';
 import fetch from 'node-fetch';
 import Credential from 'src/models/credential';
-
+import Slack from 'src/lib/slack';
 
 /**
  * Google auth routes and related stuff
@@ -47,28 +47,27 @@ router.get('/auth/google/callback', async (ctx) => {
  * Slack auth routes
  */
 router.get('/auth/slack', async (ctx) => {
-	const scope = [
-		'commands'
-	];
+	const query = qs.stringify({
+		client_id: process.env.SLACK_CLIENT_ID,
+		redirect_uri: process.env.SLACK_CALLBACK,
+		scope: [
+			'commands',
+			'chat:write:bot',
+			'users:read',
+		].join(','),
+	});
 
-	ctx.redirect(`https://slack.com/oauth/authorize?scope=${scope.join(',')}&client_id=${process.env.SLACK_CLIENT_ID}`);
+	ctx.redirect(`https://slack.com/oauth/authorize?${query}`);
 });
 
 router.get('/auth/slack/callback', async (ctx) => {
-	const res = await fetch('https://slack.com/api/oauth.access', {
-		method: 'post',
-		body: qs.stringify({
-			client_id: process.env.SLACK_CLIENT_ID,
-			client_secret: process.env.SLACK_CLIENT_SECRET,
-			redirect_uri: process.env.SLACK_CALLBACK,
-			code: ctx.query.code,
-		}),
-		headers: {
-			'Content-Type': 'application/x-www-form-urlencoded'
-		}
-	}).then(res => res.json());
+	const res = await Slack.getToken({
+		client_id: process.env.SLACK_CLIENT_ID,
+		client_secret: process.env.SLACK_CLIENT_SECRET,
+		redirect_uri: process.env.SLACK_CALLBACK,
+		code: ctx.query.code,
+	});
 
-	ctx.assert(res.ok, 'Slack login failed.', 401);
 	await Credential.create({ service: 'slack', payload: res.access_token });
 	ctx.body = await Credential.for('slack');
 });
