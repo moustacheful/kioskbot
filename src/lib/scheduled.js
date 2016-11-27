@@ -10,4 +10,4 @@ const tasks = [
 	{ rule: '0 */1 * * 1-5', fn: updateUsers }, // Every hour on weekdays
 ];
 
-//_.forEach(tasks, task => schedule.scheduleJob(task.rule, task.fn));
+_.forEach(tasks, task => schedule.scheduleJob(task.rule, task.fn));
