@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 
-const purchaseSchema = new mongoose.Schema({
+const schema = new mongoose.Schema({
 	product: {
 		type: String,
 		required: true,
@@ -22,4 +22,8 @@ const purchaseSchema = new mongoose.Schema({
 	createdAt: { type: Date, default: Date.now },
 });
 
-export default mongoose.model('Purchase', purchaseSchema);
+schema.methods.revert = async function () {
+	await this.remove();
+};
+
+export default mongoose.model('Purchase', schema);

@@ -70,6 +70,17 @@ class KioskService {
 		};
 	}
 
+	async revertPurchase(purchaseId) {
+		const purchase = await Purchase.findById(purchaseId);
+		if (!purchase) throw new Error(`No se encontró la compra ${purchaseId}.`);
+
+		const product = await Product.findOne({ item: purchase.product });
+		if (!product) throw new Error('No se encontró el producto.');
+
+
+		await purchase.revert();
+	}
+
 	async getTabForUser(username, count) {
 		const user = await User.findOne({ username });
 		if (!user) throw new Error(`Usuario @${username} no existe.`);

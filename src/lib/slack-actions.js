@@ -147,7 +147,10 @@ const adminActions = {
 		ctx.body = { text, attachments };
 	},
 
-	cancelar: async ctx => {},
+	revert: async (ctx) => {
+		const action = _.first(ctx.state.slack.actions);
+		ctx.body = await kiosk.revertPurchase(action.value);
+	}
 };
 
 const actions = {
