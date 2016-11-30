@@ -1,3 +1,4 @@
+import _ from 'lodash';
 import fetch from 'node-fetch';
 import Promise from 'bluebird';
 import qs from 'querystring';
@@ -27,6 +28,14 @@ class Slack {
 			throw new Error(res.error);
 		});
 	}
+
+	static buildMessage(payload) {
+		if (_.isString(payload)) payload = { text: payload };
+		return {
+			mrkdwn: true,
+			...payload
+		}
+	}
 }
 
 Slack._base = 'https://slack.com/api/';
@@ -34,8 +43,8 @@ Slack.chat = {
 	postMessage: (body, channel) => {
 		return Slack._makeRequest('chat.postMessage', {
 			username: Slack._defaultUser,
-			text: body,
 			channel: channel,
+			...Slack.buildMessage(body),
 		});
 	}
 }
