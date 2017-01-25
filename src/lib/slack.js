@@ -41,10 +41,15 @@ class Slack {
 Slack._base = 'https://slack.com/api/';
 Slack.chat = {
 	postMessage: (body, channel) => {
+		let { attachments, ...messageBody } = Slack.buildMessage(body);
+		// Stringify attachments
+		if (attachments) attachments = JSON.stringify(attachments);
+
 		return Slack._makeRequest('chat.postMessage', {
 			username: Slack._defaultUser,
 			channel: channel,
-			...Slack.buildMessage(body),
+			...messageBody,
+			attachments
 		});
 	}
 }

@@ -2,6 +2,7 @@ import _ from 'lodash';
 import numeral from 'numeral';
 import kiosk from 'src/lib/kiosk-service';
 import googleSheet from 'src/lib/google-sheet';
+import Slack from 'src/lib/slack';
 
 const adminActions = {
 	/**
@@ -26,18 +27,30 @@ const adminActions = {
 	 * Pay a users's tab
 	 */
 	'pagar': async (ctx) => {
-		const [, user, amount] = ctx.state.slack.text.split(' ');
-		const result = await kiosk.payTabForUser(user.replace('@', ''), amount)
+		let [, user, amount] = ctx.state.slack.text.split(' ');
+		user = user.replace('@', '');
 
+		const result = await kiosk.payTabForUser(user, amount);
+
+		const attachments = [{
+			fields: [
+				{ short: true, title: 'Pagado', value: numeral(result.paid).format() },
+				{ short: true, title: 'Restante', value: numeral(result.remainder).format() },
+			]
+		}];
+
+		// Notify the user about payment received
+		Slack.chat.postMessage({
+			text: `Gracias! Acabamos de recibir tu pago.`,
+			attachments
+		}, `@${user}`)
+			.catch(() => console.log('Could not send message'));
+
+		// Respond the admin
 		ctx.body = {
 			text: `Deuda para *${user}* pagada.`,
-			attachments: [{
-				fields: [
-					{ short: true, title: 'Pagado', value: numeral(result.paid).format() },
-					{ short: true, title: 'Restante', value: numeral(result.remainder).format() },
-				]
-			}]
-		}
+			attachments
+		};
 	},
 
 	/**
