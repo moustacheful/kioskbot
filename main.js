@@ -5,7 +5,7 @@ pm2.connect(function(){
 		script: './src/index.js',
 		instances: process.env.WEB_CONCURRENCY || 1,
 		exec_mode: process.env.NODE_ENV === 'production' ? 'cluster' : 'fork',
-		watch: true,
+		watch: process.env.NODE_ENV === 'development',
 		kill_timeout: 5000
 	}, function(err){
 		if(err)
