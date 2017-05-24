@@ -42,8 +42,8 @@ const adminActions = {
 					},
 					{
 						short: true,
-						title: 'Restante',
-						value: numeral(result.remainder).format(),
+						title: result.remainder < 0 ? 'Crédito' : 'Restante',
+						value: numeral(Math.abs(result.remainder)).format(),
 					},
 				],
 			},
@@ -102,9 +102,16 @@ const adminActions = {
 			ts: purchase.createdAt.getTime() / 1000,
 		}));
 
-		let text = user.debt
-			? `${username} debe *${numeral(user.debt).format()}* :rat:`
-			: `${username} no registra deuda :tada:`;
+		let text = '';
+
+		if (user.debt > 0) {
+			text = `${username} debe  ${numeral(user.debt).format()} :rat:`;
+		} else if (user.debt < 0) {
+			text = `${username} tiene ${numeral(Math.abs(user.debt)).format()} a favor :money_with_wings:`;
+		} else {
+			text = `${username} no registra deuda :tada:`;
+		}
+
 		text += `\n Últimas ${purchasesCount} compras:`;
 		ctx.body = { text, attachments };
 	},
@@ -119,9 +126,17 @@ const actions = {
 	deuda: async ctx => {
 		const user = ctx.state.user;
 
-		ctx.body = user.debt
-			? `Debes ${numeral(user.debt).format()} :rat:`
-			: 'No registras deuda :tada:';
+		let body = '';
+
+		if (user.debt > 0) {
+			body = `Debes ${numeral(user.debt).format()} :rat:`;
+		} else if (user.debt < 0) {
+			body = `Tienes ${numeral(Math.abs(user.debt)).format()} a favor :money_with_wings:`;
+		} else {
+			body = 'No registras deuda :tada:';
+		}
+
+		ctx.body = body;
 	},
 
 	/**
