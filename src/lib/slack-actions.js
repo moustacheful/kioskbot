@@ -9,9 +9,8 @@ const adminActions = {
 		const { user } = ctx.state;
 		const accountInfo = !process.env.ACCOUNT_INFO ? [] : [
 			'\nLa cuenta para abonar o pagar tu deuda es:',
-			'```',
+			'>>>',
 			process.env.ACCOUNT_INFO,
-			'```'
 		];
 
 		ctx.body = {
