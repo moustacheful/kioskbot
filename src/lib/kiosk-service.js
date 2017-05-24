@@ -7,11 +7,11 @@ import User from 'src/models/user';
 import Slack from 'src/lib/slack';
 
 class KioskService {
-	constructor(){
+	constructor() {
 		googleSheet.on('stockUpdated', this.updateStock.bind(this));
 	}
 
-	async getStock(){
+	async getStock() {
 		return Product.find({ stockActual: { $gt: 0 } });
 	}
 
@@ -23,7 +23,7 @@ class KioskService {
 		console.log('Products updated!');
 	}
 
-	async purchase(productId, user, quantity = 1){
+	async purchase(productId, user, quantity = 1) {
 		if (!user) throw new Error('No user specified.');
 
 		const product = await Product.findById(productId);
@@ -34,35 +34,38 @@ class KioskService {
 		await Promise.all([
 			product.update({
 				$inc: {
-					stockActual: -1
-				}
+					stockActual: -1,
+				},
 			}),
 			user.update({
 				$inc: {
-					debt: product.precio
-				}
+					debt: product.precio,
+				},
 			}),
 			Purchase.create({
 				product: product.item,
 				amount: product.precio * quantity,
 				quantity: quantity,
 				user: user,
-			})
+			}),
 		]);
 
 		const [updatedUser, updatedProduct] = await Promise.all([
 			User.findById(user._id),
-			Product.findById(product._id)
+			Product.findById(product._id),
 		]);
 
 		const { index, stockActual } = updatedProduct;
 		// Exec async tasks.
 		googleSheet.update(index, 2, stockActual);
-		Slack.chat.postMessage(`${user.username} acaba de comprar ${product.item}`, '#kioskbot');
+		Slack.chat.postMessage(
+			`${user.username} acaba de comprar ${product.item}`,
+			'#kioskbot'
+		);
 
 		return {
 			debt: updatedUser.debt,
-			product: updatedProduct
+			product: updatedProduct,
 		};
 	}
 
@@ -74,17 +77,17 @@ class KioskService {
 		return { user, purchases };
 	}
 
-	async payTabForUser (username, amount) {
+	async payTabForUser(username, amount) {
 		const user = await User.findOne({ username });
 
-		if (!user) throw new Error(`Usuario ${username} no existe en los registros.`);
+		if (!user)
+			throw new Error(`Usuario ${username} no existe en los registros.`);
 		if (!amount) amount = user.debt;
-		if (user.debt - amount < 0) throw new Error(`Monto sobrepasa la deuda. _(hint: dejar vacío para pagar todo)_`);
 
 		await user.update({
 			$inc: {
-				debt: -amount
-			}
+				debt: -amount,
+			},
 		});
 
 		const updatedUser = await User.findById(user._id);
@@ -92,9 +95,7 @@ class KioskService {
 	}
 
 	getOutstandingTabs() {
-		return User
-			.find({ debt: { $gt: 0 } })
-			.sort({ debt: -1 });
+		return User.find({ debt: { $gt: 0 } }).sort({ debt: -1 });
 	}
 
 	async isUpToDate(incoming) {
