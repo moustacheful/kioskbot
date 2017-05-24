@@ -8,14 +8,14 @@ const adminActions = {
 	ayuda: async ctx => {
 		const { user } = ctx.state;
 		const accountInfo = !process.env.ACCOUNT_INFO ? [] : [
-			'\nLa cuenta para abonar o pagar tu deuda es:',
+			'\n\nLa cuenta para abonar o pagar tu deuda es:',
 			'>>>',
 			process.env.ACCOUNT_INFO,
 		];
 
 		ctx.body = {
 			text: [
-				`Hola *@${user.username}!*`,
+				`Hola *@${user.username}!*\n\n`,
 				'Los comandos disponibles son:',
 				'*/kioskbot* _muestra el stock disponible en kioskbot_',
 				'*/kioskbot deuda* _muestra tu deuda o crédito en kioskbot_',
