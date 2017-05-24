@@ -7,22 +7,22 @@ import Slack from 'src/lib/slack';
 const adminActions = {
 	ayuda: async ctx => {
 		const { user } = ctx.state;
-		const accountInfo = !process.env.ACCOUNT_INFO ? '' : `
-			\n\nLa cuenta para abonar o pagar tu deuda es:\n
-			\`\`\`
-				${process.env.ACCOUNT_INFO}
-			\`\`\`
-		`;
+		const accountInfo = !process.env.ACCOUNT_INFO ? [] : [
+			'\nLa cuenta para abonar o pagar tu deuda es:',
+			'```',
+			process.env.ACCOUNT_INFO,
+			'```'
+		];
 
 		ctx.body = {
-			text: `
-				Hola *@${user.username}!*\n
-				Los comandos disponibles son:\n
-				*/kioskbot* _muestra el stock disponible en kioskbot_ \n
-				*/kioskbot deuda* _muestra tu deuda o crédito en kioskbot_\n
-				*/kioskbot ayuda* _me estás leyendo ahora mismo_\n
-				${accountInfo}
-			`
+			text: [
+				`Hola *@${user.username}!*`,
+				'Los comandos disponibles son:',
+				'*/kioskbot* _muestra el stock disponible en kioskbot_',
+				'*/kioskbot deuda* _muestra tu deuda o crédito en kioskbot_',
+				'*/kioskbot ayuda* _me estás leyendo ahora mismo_',
+				...accountInfo
+			].join('\n'),
 		};
 	},
 	/**
