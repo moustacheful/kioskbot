@@ -192,13 +192,15 @@ const actions = {
 	purchase: async ctx => {
 		const payload = ctx.state.slack;
 		const productId = _.first(payload.actions).value;
-		const { debt, product } = await kiosk.purchase(productId, ctx.state.user);
+		const currentDebt = ctx.state.user.debt;
 
-		if (debt > (process.env.MAX_DEBT || Infinity))
+		if (currentDebt > (process.env.MAX_DEBT || Infinity))
 			ctx.throw(
-				`*Compra no realizada*: Kioskbot no fía más de ${numeral(1000).format()} y debes ${numeral(debt).format()}.`,
+				`*Compra no realizada*: Kioskbot no fía más de ${numeral(1000).format()} y debes ${numeral(currentDebt).format()}.`,
 				402
 			);
+
+		const { debt, product } = await kiosk.purchase(productId, ctx.state.user);
 
 		ctx.body = {
 			text: `Compra exitosa!`,
