@@ -196,7 +196,7 @@ const actions = {
 
 		if (debt > (process.env.MAX_DEBT || Infinity))
 			ctx.throw(
-				`*Compra no realizada*: Kioskbot no fía más de ${numeral(1000)} y debes ${numeral(debt)}.`,
+				`*Compra no realizada*: Kioskbot no fía más de ${numeral(1000).format()} y debes ${numeral(debt).format()}.`,
 				402
 			);
 
