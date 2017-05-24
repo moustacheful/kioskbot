@@ -206,7 +206,11 @@ const actions = {
 							title: 'Precio',
 							value: numeral(product.precio).format(),
 						},
-						{ short: true, title: 'Deuda', value: numeral(debt).format() },
+						{
+							short: true,
+							title: debt < 0 ? 'Crédito' : 'Deuda',
+							value: numeral(Math.abs(debt)).format(),
+						},
 					],
 				},
 			],
