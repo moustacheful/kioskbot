@@ -194,6 +194,12 @@ const actions = {
 		const productId = _.first(payload.actions).value;
 		const { debt, product } = await kiosk.purchase(productId, ctx.state.user);
 
+		if (debt > (process.env.MAX_DEBT || Infinity))
+			ctx.throw(
+				`*Compra no realizada*: Kioskbot no fía más de ${numeral(1000)} y debes ${numeral(debt)}.`,
+				402
+			);
+
 		ctx.body = {
 			text: `Compra exitosa!`,
 			attachments: [
