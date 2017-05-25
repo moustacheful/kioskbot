@@ -5,25 +5,6 @@ import googleSheet from 'src/lib/google-sheet';
 import Slack from 'src/lib/slack';
 
 const adminActions = {
-	ayuda: async ctx => {
-		const { user } = ctx.state;
-		const accountInfo = !process.env.ACCOUNT_INFO ? [] : [
-			'\n\nLa cuenta para abonar o pagar tu deuda es:',
-			'>>>',
-			process.env.ACCOUNT_INFO,
-		];
-
-		ctx.body = {
-			text: [
-				`Hola *@${user.username}!*\n\n`,
-				'Los comandos disponibles son:',
-				'*/kioskbot* _muestra el stock disponible en kioskbot_',
-				'*/kioskbot deuda* _muestra tu deuda o crédito en kioskbot_',
-				'*/kioskbot ayuda* _me estás leyendo ahora mismo_',
-				...accountInfo
-			].join('\n'),
-		};
-	},
 	/**
 	 * Returns an ordered list with all outstanding tabs
 	 */
@@ -139,6 +120,25 @@ const adminActions = {
 };
 
 const actions = {
+	ayuda: async ctx => {
+		const { user } = ctx.state;
+		const accountInfo = !process.env.ACCOUNT_INFO ? [] : [
+			'\n\nLa cuenta para abonar o pagar tu deuda es:',
+			'>>>',
+			process.env.ACCOUNT_INFO,
+		];
+
+		ctx.body = {
+			text: [
+				`Hola *@${user.username}!*\n\n`,
+				'Los comandos disponibles son:',
+				'*/kioskbot* _muestra el stock disponible en kioskbot_',
+				'*/kioskbot deuda* _muestra tu deuda o crédito en kioskbot_',
+				'*/kioskbot ayuda* _me estás leyendo ahora mismo_',
+				...accountInfo
+			].join('\n'),
+		};
+	},
 	/**
 	 * Returns requesting user's tab
 	 */
