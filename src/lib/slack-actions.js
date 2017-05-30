@@ -125,7 +125,7 @@ const actions = {
 		const accountInfo = !process.env.ACCOUNT_INFO ? [] : [
 			'\n\nLa cuenta para abonar o pagar tu deuda es:',
 			'>>>',
-			process.env.ACCOUNT_INFO,
+			process.env.ACCOUNT_INFO.split('|').join('\n'),
 		];
 
 		ctx.body = {
