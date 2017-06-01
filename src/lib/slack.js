@@ -10,31 +10,36 @@ class Slack {
 	}
 
 	static getToken(data) {
-		return Slack._makeRequest('oauth.access', data)
+		return Slack._makeRequest('oauth.access', data);
 	}
 
 	static _makeRequest(path, data = {}, method = 'POST') {
+		if (process.env.NODE_ENV === 'development') {
+			console.log('Would be sending:', path, data, method);
+			return Promise.resolve();
+		}
+
 		return fetch(`${Slack._base}${path}`, {
 			method,
 			body: qs.stringify({
 				token: Slack._token,
-				...data
+				...data,
 			}),
-			headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+			headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
 		})
-		.then(res => res.json())
-		.then(res => {
-			if (res.ok) return res;
-			throw new Error(res.error);
-		});
+			.then(res => res.json())
+			.then(res => {
+				if (res.ok) return res;
+				throw new Error(res.error);
+			});
 	}
 
 	static buildMessage(payload) {
 		if (_.isString(payload)) payload = { text: payload };
 		return {
 			mrkdwn: true,
-			...payload
-		}
+			...payload,
+		};
 	}
 }
 
@@ -49,13 +54,13 @@ Slack.chat = {
 			username: Slack._defaultUser,
 			channel: channel,
 			...messageBody,
-			attachments
+			attachments,
 		});
-	}
-}
+	},
+};
 
 Slack.users = {
-	list: () => Slack._makeRequest('users.list')
-}
+	list: () => Slack._makeRequest('users.list'),
+};
 
 export default Slack;

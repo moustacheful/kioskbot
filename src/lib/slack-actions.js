@@ -268,11 +268,13 @@ const actions = {
 
 		if (!ctx.state.visitor) return;
 
-		ctx.state.visitor.transaction(purchase._id, purchase.amount).item({
-			itemName: product.item,
-			itemPrice: product.precio,
-			itemQuantity: purchase.quantity,
-		});
+		ctx.state.visitor
+			.transaction(purchase._id.toString(), purchase.amount)
+			.item({
+				in: product.item,
+				ip: product.precio,
+				iq: purchase.quantity,
+			});
 	},
 };
 
