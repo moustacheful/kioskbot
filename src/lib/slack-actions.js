@@ -6,6 +6,24 @@ import Slack from 'src/lib/slack';
 
 const adminActions = {
 	/**
+	 * Returns an ordered list with all users with store credit
+	 */
+	abonos: async ctx => {
+		const users = await kiosk.getUsersWithCredit();
+
+		const list = _.map(users, user => {
+			return `- *${user.username}*   ${numeral(Math.abs(user.debt)).format()}`;
+		});
+
+		if (!list.length) list.push(`No hay usuarios con abonos.`);
+
+		ctx.body = {
+			text: 'Usuarios con abonos:',
+			attachments: [{ text: list.join('\n'), mrkdwn_in: ['text'] }],
+		};
+	},
+
+	/**
 	 * Returns an ordered list with all outstanding tabs
 	 */
 	deudas: async ctx => {
@@ -122,11 +140,13 @@ const adminActions = {
 const actions = {
 	ayuda: async ctx => {
 		const { user } = ctx.state;
-		const accountInfo = !process.env.ACCOUNT_INFO ? [] : [
-			'\n\nLa cuenta para abonar o pagar tu deuda es:',
-			'>>>',
-			process.env.ACCOUNT_INFO.split('|').join('\n'),
-		];
+		const accountInfo = !process.env.ACCOUNT_INFO
+			? []
+			: [
+					'\n\nLa cuenta para abonar o pagar tu deuda es:',
+					'>>>',
+					...process.env.ACCOUNT_INFO.split('|'),
+				];
 
 		ctx.body = {
 			text: [
@@ -135,7 +155,7 @@ const actions = {
 				'*/kioskbot* _muestra el stock disponible en kioskbot_',
 				'*/kioskbot deuda* _muestra tu deuda o crédito en kioskbot_',
 				'*/kioskbot ayuda* _me estás leyendo ahora mismo_',
-				...accountInfo
+				...accountInfo,
 			].join('\n'),
 		};
 	},
@@ -213,13 +233,16 @@ const actions = {
 		const productId = _.first(payload.actions).value;
 		const currentDebt = ctx.state.user.debt;
 
-		if (currentDebt > (process.env.MAX_DEBT || Infinity))
+		if (currentDebt >= (process.env.MAX_DEBT || Infinity))
 			ctx.throw(
-				`*Compra no realizada*: Kioskbot no fía más de ${numeral(1000).format()} y debes ${numeral(currentDebt).format()}.`,
+				`*Compra no realizada*: Kioskbot no fía más de ${numeral(process.env.MAX_DEBT).format()} y debes ${numeral(currentDebt).format()}.`,
 				402
 			);
 
-		const { debt, product } = await kiosk.purchase(productId, ctx.state.user);
+		const { debt, product, purchase } = await kiosk.purchase(
+			productId,
+			ctx.state.user
+		);
 
 		ctx.body = {
 			text: `Compra exitosa!`,
@@ -242,6 +265,14 @@ const actions = {
 				},
 			],
 		};
+
+		if (!ctx.state.visitor) return;
+
+		ctx.state.visitor.transaction(purchase._id, purchase.amount).item({
+			itemName: product.item,
+			itemPrice: product.precio,
+			itemQuantity: purchase.quantity,
+		});
 	},
 };
 
