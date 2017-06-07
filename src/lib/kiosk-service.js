@@ -31,7 +31,7 @@ class KioskService {
 		if (!product) throw new Error('Product not available.');
 		if (product.stockActual < 1) throw new Error('Product out of stock.');
 
-		await Promise.all([
+		const [, , purchase] = await Promise.all([
 			product.update({
 				$inc: {
 					stockActual: -1,
@@ -64,6 +64,7 @@ class KioskService {
 		);
 
 		return {
+			purchase,
 			debt: updatedUser.debt,
 			product: updatedProduct,
 		};
@@ -96,6 +97,10 @@ class KioskService {
 
 	getOutstandingTabs() {
 		return User.find({ debt: { $gt: 0 } }).sort({ debt: -1 });
+	}
+
+	getUsersWithCredit() {
+		return User.find({ debt: { $lt: 0 } }).sort({ debt: 1 });
 	}
 
 	async isUpToDate(incoming) {
