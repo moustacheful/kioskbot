@@ -236,8 +236,7 @@ const actions = {
 	 */
 	purchase: async ctx => {
 		const payload = ctx.state.slack;
-		console.log(payload);
-		const productId = _.first(payload.actions).value;
+		const productId = _.get(payload, 'actions.0.selected_options.0.value');
 		const currentDebt = ctx.state.user.debt;
 
 		if (currentDebt >= (process.env.MAX_DEBT || Infinity))
