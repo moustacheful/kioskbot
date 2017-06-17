@@ -60,7 +60,7 @@ class KioskService {
 		googleSheet.update(index, 2, stockActual);
 		Slack.chat.postMessage(
 			`${user.username} acaba de comprar ${product.item}`,
-			'#kioskbot-alerts'
+			process.env.SLACK_CHANNEL_ADMIN
 		);
 
 		return {

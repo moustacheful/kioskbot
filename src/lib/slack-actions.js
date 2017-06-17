@@ -45,6 +45,7 @@ const adminActions = {
 	 * Pay a users's tab
 	 */
 	pagar: async ctx => {
+		const currentUser = ctx.state.user;
 		let [, user, amount] = ctx.state.slack.text.split(' ');
 		user = user.replace('@', '');
 
@@ -75,6 +76,17 @@ const adminActions = {
 					attachments,
 				},
 				`@${user}`
+			)
+			.catch(() => console.log('Could not send message'));
+
+		// Notify admins, for logging purposes.
+		Slack.chat
+			.postMessage(
+				{
+					text: `Deuda pagada para *@${user}* (_pagado por @${currentUser.username}_)`,
+					attachments,
+				},
+				process.env.SLACK_CHANNEL_ADMIN
 			)
 			.catch(() => console.log('Could not send message'));
 
@@ -253,7 +265,7 @@ const actions = {
 
 		if (currentDebt >= (process.env.MAX_DEBT || Infinity))
 			ctx.throw(
-				`*Compra no realizada*: Kioskbot no fía más de ${numeral(process.env.MAX_DEBT).format()} y debes ${numeral(currentDebt).format()}.`,
+				`*Compra no realizada*: Kioskbot no fía más de ${numeral(process.env.MAX_DEBT).format()} y debes ${ctx.state.user.formattedDebt}.`,
 				402
 			);
 
