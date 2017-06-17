@@ -19,26 +19,29 @@ const userSchema = new mongoose.Schema({
 });
 
 // Static functions
-userSchema.statics.findOneOrUpsertFromSlack = function (data) {
-	return User.findOneAndUpdate({ sid: data.id }, {
-		sid: data.id,
-		username: data.name,
-	}, { upsert: true, new: true, setDefaultsOnInsert: true });
+userSchema.statics.findOneOrUpsertFromSlack = function(data) {
+	return User.findOneAndUpdate(
+		{ sid: data.id },
+		{
+			sid: data.id,
+			username: data.name,
+		},
+		{ upsert: true, new: true, setDefaultsOnInsert: true }
+	);
 };
 
 // Instance methods
-userSchema.methods.getPurchases = function (count = 3) {
-	return Purchase
-		.find({ user: this._id })
+userSchema.methods.getPurchases = function(count = 3) {
+	return Purchase.find({ user: this._id })
 		.sort({ createdAt: -1 })
 		.limit(parseInt(count));
 };
 
-userSchema.virtual('formattedDebt').get(function () {
-	return numeral(this.debt).format();
+userSchema.virtual('formattedDebt').get(function() {
+	return numeral(Math.abs(this.debt)).format();
 });
 
-userSchema.virtual('isAdmin').get(function () {
+userSchema.virtual('isAdmin').get(function() {
 	return process.env.SLACK_ADMINS.split(',').includes(this.username);
 });
 
