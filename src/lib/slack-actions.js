@@ -168,9 +168,9 @@ const actions = {
 		let body = '';
 
 		if (user.debt > 0) {
-			body = `Debes ${numeral(user.debt).format()} :rat:`;
+			body = `Debes ${user.formattedDebt} :rat:`;
 		} else if (user.debt < 0) {
-			body = `Tienes ${numeral(Math.abs(user.debt)).format()} a favor :money_with_wings:`;
+			body = `Tienes ${user.formattedDebt} a favor :money_with_wings:`;
 		} else {
 			body = 'No registras deuda :tada:';
 		}
@@ -182,12 +182,20 @@ const actions = {
 	 * Gives out a list of the available products.
 	 */
 	stock: async ctx => {
+		const { user } = ctx.state;
 		const products = await kiosk.getStock();
+
+		let userDebtText = '';
+		if (user.debt > 0) {
+			userDebtText = `Debes *${user.formattedDebt}* :rat:.`;
+		} else if (user.debt < 0) {
+			userDebtText = `Tienes *${user.formattedDebt}* a favor :money_with_wings:`;
+		}
 		const attachments = [
 			{
 				callback_id: 'purchase',
-				color: '#3AA3E3',
 				attachment_type: 'default',
+				text: 'En stock:',
 				actions: [
 					{
 						name: 'product_select',
@@ -213,10 +221,14 @@ const actions = {
 					},
 				],
 			},
+			{
+				text: `_Si necesitas ayuda sobre cómo pagar, escribe */kioskbot ayuda*. Cualquier otra pregunta o sugerencia que tengas puedes hacerla en el canal <#${process.env.SLACK_CHANNEL_PUBLIC}>_`,
+				mrkdwn_in: ['text'],
+			},
 		];
 
 		ctx.body = {
-			text: 'Kioskbot - en stock:',
+			text: `Hola *@${user.username}*! ${userDebtText}\n`,
 			attachments,
 		};
 	},
