@@ -222,7 +222,7 @@ const actions = {
 				],
 			},
 			{
-				text: `Si necesitas ayuda sobre cómo pagar, escribe */kioskbot ayuda*. Cualquier otra pregunta o sugerencia que tengas puedes hacerla en el canal <#${process.env.SLACK_CHANNEL_PUBLIC}>`,
+				text: `_Si necesitas ayuda sobre cómo pagar, escribe */kioskbot ayuda*. Cualquier otra pregunta o sugerencia que tengas puedes hacerla en el canal <#${process.env.SLACK_CHANNEL_PUBLIC}>_`,
 				mrkdwn_in: ['text'],
 			},
 		];
