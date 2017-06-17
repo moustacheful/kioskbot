@@ -182,32 +182,38 @@ const actions = {
 	 * Gives out a list of the available products.
 	 */
 	stock: async ctx => {
-		const chunks = _.chunk(await kiosk.getStock(), 3);
-		const attachments = _.map(chunks, chunk => ({
-			callback_id: 'purchase',
-			color: '#3AA3E3',
-			attachment_type: 'default',
-			actions: _.map(chunk, item => ({
-				name: item.item,
-				text: `${numeral(item.precio).format()} | ${item.item}`,
-				type: 'button',
-				value: item._id,
-			})),
-		}));
-
-		attachments.push({
-			callback_id: 'cancel',
-			color: 'danger',
-			actions: [
-				{
-					name: 'cancel',
-					text: 'Cancelar',
-					type: 'button',
-					value: 'cancel',
-					style: 'danger',
-				},
-			],
-		});
+		const products = await kiosk.getStock();
+		const attachments = [
+			{
+				callback_id: 'purchase',
+				color: '#3AA3E3',
+				attachment_type: 'default',
+				actions: [
+					{
+						name: 'product_select',
+						text: 'Seleccionar producto',
+						type: 'select',
+						options: _.map(products, product => ({
+							text: `${numeral(product.precio).format()} | ${product.item}`,
+							value: product._id,
+						})),
+					},
+				],
+			},
+			{
+				callback_id: 'cancel',
+				color: 'danger',
+				actions: [
+					{
+						name: 'cancel',
+						text: 'Cancelar',
+						type: 'button',
+						value: 'cancel',
+						style: 'danger',
+					},
+				],
+			},
+		];
 
 		ctx.body = {
 			text: 'Kioskbot - en stock:',
@@ -230,7 +236,7 @@ const actions = {
 	 */
 	purchase: async ctx => {
 		const payload = ctx.state.slack;
-		const productId = _.first(payload.actions).value;
+		const productId = _.get(payload, 'actions.0.selected_options.0.value');
 		const currentDebt = ctx.state.user.debt;
 
 		if (currentDebt >= (process.env.MAX_DEBT || Infinity))
