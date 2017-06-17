@@ -223,11 +223,12 @@ const actions = {
 			},
 			{
 				text: `Si necesitas ayuda sobre cómo pagar, escribe */kioskbot ayuda*. Cualquier otra pregunta o sugerencia que tengas puedes hacerla en el canal <#${process.env.SLACK_CHANNEL_PUBLIC}>`,
+				mrkdwn_in: ['text'],
 			},
 		];
 
 		ctx.body = {
-			text: `Hola @${user.username}! ${userDebtText}`,
+			text: `Hola *@${user.username}*! ${userDebtText}\n`,
 			attachments,
 		};
 	},
