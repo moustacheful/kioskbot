@@ -189,7 +189,7 @@ const actions = {
 		if (user.debt > 0) {
 			userDebtText = `Debes *${user.formattedDebt}* :rat:.`;
 		} else if (user.debt < 0) {
-			userDebtText = `Tienes *${user.formattedDebt}* a favor :money_with_wings.`;
+			userDebtText = `Tienes *${user.formattedDebt}* a favor :money_with_wings:`;
 		}
 		const attachments = [
 			{
@@ -222,7 +222,7 @@ const actions = {
 				],
 			},
 			{
-				text: 'Si necesitas ayuda sobre cómo pagar, escribe */kioskbot ayuda*. Cualquier otra pregunta o sugerencia que tengas puedes hacerla en el canal #kioskbot',
+				text: `Si necesitas ayuda sobre cómo pagar, escribe */kioskbot ayuda*. Cualquier otra pregunta o sugerencia que tengas puedes hacerla en el canal <#${process.env.SLACK_CHANNEL_PUBLIC}>`,
 			},
 		];
 
