@@ -15,15 +15,15 @@ const schema = new mongoose.Schema({
 		default: 1,
 		min: 1,
 	},
+	reverted: {
+		type: Boolean,
+		default: false,
+	},
 	user: {
 		type: mongoose.Schema.Types.ObjectId,
 		ref: 'User',
 	},
 	createdAt: { type: Date, default: Date.now },
 });
-
-schema.methods.revert = async function () {
-	await this.remove();
-};
 
 export default mongoose.model('Purchase', schema);

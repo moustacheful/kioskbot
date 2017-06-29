@@ -120,7 +120,9 @@ const adminActions = {
 			mrkdwn_in: ['text'],
 			callback_id: 'purchase',
 			attachment_type: 'default',
-			text: `${purchase.product} (${purchase.quantity} un.) *${numeral(purchase.amount).format()}*`,
+			text: `${purchase.product} (${purchase.quantity} un.) *${numeral(
+				purchase.amount
+			).format()}*`,
 			actions: [
 				{
 					name: 'revertir',
@@ -138,7 +140,9 @@ const adminActions = {
 		if (user.debt > 0) {
 			text = `${username} debe  ${numeral(user.debt).format()} :rat:`;
 		} else if (user.debt < 0) {
-			text = `${username} tiene ${numeral(Math.abs(user.debt)).format()} a favor :money_with_wings:`;
+			text = `${username} tiene ${numeral(
+				Math.abs(user.debt)
+			).format()} a favor :money_with_wings:`;
 		} else {
 			text = `${username} no registra deuda :tada:`;
 		}
@@ -147,10 +151,13 @@ const adminActions = {
 		ctx.body = { text, attachments };
 	},
 
-	revert: async (ctx) => {
-		const action = _.first(ctx.state.slack.actions);
-		ctx.body = await kiosk.revertPurchase(action.value);
-	}
+	revert: async ctx => {
+		const purchaseId = _.get(
+			ctx.state.slack,
+			'actions.0.selected_options.0.value'
+		);
+		ctx.body = await kiosk.revertPurchase(purchaseId);
+	},
 };
 
 const actions = {
@@ -272,7 +279,8 @@ const actions = {
 				],
 			},
 			{
-				text: `_Si necesitas ayuda sobre cómo pagar, escribe */kioskbot ayuda*. Cualquier otra pregunta o sugerencia que tengas puedes hacerla en el canal <#${process.env.SLACK_CHANNEL_PUBLIC}>_`,
+				text: `_Si necesitas ayuda sobre cómo pagar, escribe */kioskbot ayuda*. Cualquier otra pregunta o sugerencia que tengas puedes hacerla en el canal <#${process
+					.env.SLACK_CHANNEL_PUBLIC}>_`,
 				mrkdwn_in: ['text'],
 			},
 		];
@@ -306,7 +314,9 @@ const actions = {
 
 		if (currentDebt >= (process.env.MAX_DEBT || Infinity))
 			ctx.throw(
-				`*Compra no realizada*: Kioskbot no fía más de ${numeral(process.env.MAX_DEBT).format()} y debes ${ctx.state.user.formattedDebt}.`,
+				`*Compra no realizada*: Kioskbot no fía más de ${numeral(
+					process.env.MAX_DEBT
+				).format()} y debes ${ctx.state.user.formattedDebt}.`,
 				402
 			);
 
