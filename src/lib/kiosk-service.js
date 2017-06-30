@@ -59,10 +59,6 @@ class KioskService {
 		const { index, stockActual } = updatedProduct;
 		// Exec async tasks.
 		googleSheet.update(index, 2, stockActual);
-		Slack.chat.postMessage(
-			`${user.username} acaba de comprar ${product.item}`,
-			process.env.SLACK_CHANNEL_ADMIN
-		);
 
 		return {
 			purchase,
@@ -71,12 +67,13 @@ class KioskService {
 		};
 	}
 
-	async revertPurchase(purchaseId, revertedBy) {
+	async revertPurchase(purchaseId) {
 		const purchase = await Purchase.findById(purchaseId).populate('user');
 		if (!purchase) throw new Error(`No se encontró la compra ${purchaseId}.`);
+		if (purchase.reverted)
+			throw new Error('Esta compra ya había sido revertida.');
 
-		const dateLimit = moment().subtract(20, 'day');
-		console.log(moment(purchase.createdAt), dateLimit);
+		const dateLimit = moment().subtract(1, 'day');
 		if (moment(purchase.createdAt).isBefore(dateLimit)) {
 			throw new Error('Esta compra es muy antigua :(, debe ser máximo 1 día.');
 		}
@@ -109,11 +106,11 @@ class KioskService {
 
 		googleSheet.update(index, 2, stockActual);
 
-		Slack.chat.postMessage(
-			`Compra revertida para *@${updatedUser.username}* (${product.item} - ${purchase.amount}) por @${user.username}`,
-			process.env.SLACK_CHANNEL_ADMIN
-		);
-		// TODO: notify user
+		return {
+			user: updatedUser,
+			product: updatedProduct,
+			purchase: purchase,
+		};
 	}
 
 	async getTabForUser(username, count) {

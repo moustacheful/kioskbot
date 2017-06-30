@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import numeral from 'numeral';
 
 const productSchema = new mongoose.Schema({
 	item: {
@@ -14,7 +15,8 @@ const productSchema = new mongoose.Schema({
 		type: String,
 		required: true,
 	},
-	index: { type: Number,
+	index: {
+		type: Number,
 		required: true,
 		unique: true,
 	},
@@ -29,5 +31,8 @@ const productSchema = new mongoose.Schema({
 
 // Static functions
 // productSchema.statics.fn = function (args) {};
+productSchema.virtual('formattedPrice').get(function() {
+	return numeral(this.precio).format();
+});
 
 export default mongoose.model('Product', productSchema);

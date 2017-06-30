@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import numeral from 'numeral';
 
 const schema = new mongoose.Schema({
 	product: {
@@ -8,6 +9,7 @@ const schema = new mongoose.Schema({
 	amount: {
 		type: Number,
 		required: true,
+		min: 1,
 	},
 	quantity: {
 		type: Number,
@@ -24,6 +26,10 @@ const schema = new mongoose.Schema({
 		ref: 'User',
 	},
 	createdAt: { type: Date, default: Date.now },
+});
+
+schema.virtual('formattedAmount').get(function() {
+	return numeral(this.amount).format();
 });
 
 export default mongoose.model('Purchase', schema);
