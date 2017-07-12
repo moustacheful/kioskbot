@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "engines": {
+  	"node": "8.1.4"
+  },
   "scripts": {
     "dev": "env NODE_ENV=development node ./main",
     "start": "node ./main",
@@ -34,6 +37,7 @@
     "node-schedule": "^1.2.0",
     "numeral": "^1.5.3",
     "pm2": "^2.0.18",
-    "request-promise": "^4.1.1"
+    "request-promise": "^4.1.1",
+    "universal-analytics": "^0.4.13"
   }
 }

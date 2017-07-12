@@ -31,7 +31,7 @@ class KioskService {
 		if (!product) throw new Error('Product not available.');
 		if (product.stockActual < 1) throw new Error('Product out of stock.');
 
-		await Promise.all([
+		const [, , purchase] = await Promise.all([
 			product.update({
 				$inc: {
 					stockActual: -1,
@@ -60,10 +60,11 @@ class KioskService {
 		googleSheet.update(index, 2, stockActual);
 		Slack.chat.postMessage(
 			`${user.username} acaba de comprar ${product.item}`,
-			'#kioskbot-alerts'
+			process.env.SLACK_CHANNEL_ADMIN
 		);
 
 		return {
+			purchase,
 			debt: updatedUser.debt,
 			product: updatedProduct,
 		};
@@ -96,6 +97,10 @@ class KioskService {
 
 	getOutstandingTabs() {
 		return User.find({ debt: { $gt: 0 } }).sort({ debt: -1 });
+	}
+
+	getUsersWithCredit() {
+		return User.find({ debt: { $lt: 0 } }).sort({ debt: 1 });
 	}
 
 	async isUpToDate(incoming) {

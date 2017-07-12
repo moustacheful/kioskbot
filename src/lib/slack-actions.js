@@ -3,8 +3,27 @@ import numeral from 'numeral';
 import kiosk from 'src/lib/kiosk-service';
 import googleSheet from 'src/lib/google-sheet';
 import Slack from 'src/lib/slack';
+import moment from 'moment';
 
 const adminActions = {
+	/**
+	 * Returns an ordered list with all users with store credit
+	 */
+	abonos: async ctx => {
+		const users = await kiosk.getUsersWithCredit();
+
+		const list = _.map(users, user => {
+			return `- *${user.username}*   ${numeral(Math.abs(user.debt)).format()}`;
+		});
+
+		if (!list.length) list.push(`No hay usuarios con abonos.`);
+
+		ctx.body = {
+			text: 'Usuarios con abonos:',
+			attachments: [{ text: list.join('\n'), mrkdwn_in: ['text'] }],
+		};
+	},
+
 	/**
 	 * Returns an ordered list with all outstanding tabs
 	 */
@@ -27,6 +46,7 @@ const adminActions = {
 	 * Pay a users's tab
 	 */
 	pagar: async ctx => {
+		const currentUser = ctx.state.user;
 		let [, user, amount] = ctx.state.slack.text.split(' ');
 		user = user.replace('@', '');
 
@@ -57,6 +77,17 @@ const adminActions = {
 					attachments,
 				},
 				`@${user}`
+			)
+			.catch(() => console.log('Could not send message'));
+
+		// Notify admins, for logging purposes.
+		Slack.chat
+			.postMessage(
+				{
+					text: `Deuda pagada para *@${user}* (_pagado por @${currentUser.username}_)`,
+					attachments,
+				},
+				process.env.SLACK_CHANNEL_ADMIN
 			)
 			.catch(() => console.log('Could not send message'));
 
@@ -122,11 +153,13 @@ const adminActions = {
 const actions = {
 	ayuda: async ctx => {
 		const { user } = ctx.state;
-		const accountInfo = !process.env.ACCOUNT_INFO ? [] : [
-			'\n\nLa cuenta para abonar o pagar tu deuda es:',
-			'>>>',
-			process.env.ACCOUNT_INFO.split('|').join('\n'),
-		];
+		const accountInfo = !process.env.ACCOUNT_INFO
+			? []
+			: [
+					'\n\nLa cuenta para abonar o pagar tu deuda es:',
+					'>>>',
+					...process.env.ACCOUNT_INFO.split('|'),
+				];
 
 		ctx.body = {
 			text: [
@@ -135,7 +168,7 @@ const actions = {
 				'*/kioskbot* _muestra el stock disponible en kioskbot_',
 				'*/kioskbot deuda* _muestra tu deuda o crédito en kioskbot_',
 				'*/kioskbot ayuda* _me estás leyendo ahora mismo_',
-				...accountInfo
+				...accountInfo,
 			].join('\n'),
 		};
 	},
@@ -148,9 +181,9 @@ const actions = {
 		let body = '';
 
 		if (user.debt > 0) {
-			body = `Debes ${numeral(user.debt).format()} :rat:`;
+			body = `Debes ${user.formattedDebt} :rat:`;
 		} else if (user.debt < 0) {
-			body = `Tienes ${numeral(Math.abs(user.debt)).format()} a favor :money_with_wings:`;
+			body = `Tienes ${user.formattedDebt} a favor :money_with_wings:`;
 		} else {
 			body = 'No registras deuda :tada:';
 		}
@@ -162,35 +195,87 @@ const actions = {
 	 * Gives out a list of the available products.
 	 */
 	stock: async ctx => {
-		const chunks = _.chunk(await kiosk.getStock(), 3);
-		const attachments = _.map(chunks, chunk => ({
-			callback_id: 'purchase',
-			color: '#3AA3E3',
-			attachment_type: 'default',
-			actions: _.map(chunk, item => ({
-				name: item.item,
-				text: `${numeral(item.precio).format()} | ${item.item}`,
-				type: 'button',
-				value: item._id,
-			})),
-		}));
+		const { user } = ctx.state;
+		const products = await kiosk.getStock();
 
-		attachments.push({
-			callback_id: 'cancel',
-			color: 'danger',
-			actions: [
-				{
-					name: 'cancel',
-					text: 'Cancelar',
-					type: 'button',
-					value: 'cancel',
-					style: 'danger',
-				},
-			],
-		});
+		let userDebtText = '';
+		if (user.debt > 0) {
+			userDebtText = `Debes *${user.formattedDebt}* :rat:.`;
+		} else if (user.debt < 0) {
+			userDebtText = `Tienes *${user.formattedDebt}* a favor :money_with_wings:`;
+		}
+
+		const userPurchases = await user.getPurchases(3);
+
+		const purchasesAttachments = userPurchases.length
+			? [
+					{
+						text: `Últimas ${userPurchases.length} compras:`,
+					},
+					..._.map(userPurchases, purchase => {
+						let actions = undefined;
+						const product = _.find(products, { item: purchase.product });
+
+						if (product) {
+							actions = [
+								{
+									name: 'item',
+									text: 'Comprar de nuevo',
+									type: 'button',
+									value: product._id,
+								},
+							];
+						}
+
+						return {
+							mrkdwn_in: ['text'],
+							text: `*${purchase.product}*: ${numeral(purchase.amount).format()} - ${moment(purchase.createdAt).fromNow()}`,
+							callback_id: 'purchase',
+							actions,
+						};
+					}),
+				]
+			: [];
+
+		const attachments = [
+			{
+				callback_id: 'purchase',
+				attachment_type: 'default',
+				text: 'En stock:',
+				actions: [
+					{
+						name: 'product_select',
+						text: 'Seleccionar producto',
+						type: 'select',
+						options: _.map(products, product => ({
+							text: `${numeral(product.precio).format()} | ${product.item}`,
+							value: product._id,
+						})),
+					},
+				],
+			},
+			...purchasesAttachments,
+			{
+				callback_id: 'cancel',
+				color: 'danger',
+				actions: [
+					{
+						name: 'cancel',
+						text: 'Cancelar',
+						type: 'button',
+						value: 'cancel',
+						style: 'danger',
+					},
+				],
+			},
+			{
+				text: `_Si necesitas ayuda sobre cómo pagar, escribe */kioskbot ayuda*. Cualquier otra pregunta o sugerencia que tengas puedes hacerla en el canal <#${process.env.SLACK_CHANNEL_PUBLIC}>_`,
+				mrkdwn_in: ['text'],
+			},
+		];
 
 		ctx.body = {
-			text: 'Kioskbot - en stock:',
+			text: `Hola *@${user.username}*! ${userDebtText}\n`,
 			attachments,
 		};
 	},
@@ -210,16 +295,22 @@ const actions = {
 	 */
 	purchase: async ctx => {
 		const payload = ctx.state.slack;
-		const productId = _.first(payload.actions).value;
+		const productId =
+			_.get(payload, 'actions.0.selected_options.0.value') ||
+			_.get(payload, 'actions.0.value');
+
 		const currentDebt = ctx.state.user.debt;
 
-		if (currentDebt > (process.env.MAX_DEBT || Infinity))
+		if (currentDebt >= (process.env.MAX_DEBT || Infinity))
 			ctx.throw(
-				`*Compra no realizada*: Kioskbot no fía más de ${numeral(1000).format()} y debes ${numeral(currentDebt).format()}.`,
+				`*Compra no realizada*: Kioskbot no fía más de ${numeral(process.env.MAX_DEBT).format()} y debes ${ctx.state.user.formattedDebt}.`,
 				402
 			);
 
-		const { debt, product } = await kiosk.purchase(productId, ctx.state.user);
+		const { debt, product, purchase } = await kiosk.purchase(
+			productId,
+			ctx.state.user
+		);
 
 		ctx.body = {
 			text: `Compra exitosa!`,
@@ -242,6 +333,16 @@ const actions = {
 				},
 			],
 		};
+
+		if (!ctx.state.visitor) return;
+
+		ctx.state.visitor
+			.transaction(purchase._id.toString(), purchase.amount)
+			.item({
+				in: product.item,
+				ip: product.precio,
+				iq: purchase.quantity,
+			});
 	},
 };
 

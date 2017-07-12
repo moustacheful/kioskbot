@@ -1,11 +1,33 @@
+# Google analytics
+GOOGLE_UA_ID=...
+
+# Google sheets app and auth
 GOOGLE_CLIENT_ID=...
 GOOGLE_CLIENT_SECRET=...
 GOOGLE_CALLBACK=http://localhost:5000/auth/callback
-MONGODB_URI=mongodb://localhost:27017
+
+# Google sheets sheet id
 GSHEET=...
+
+# Slack app token and auth stuff
 SLACK_TOKEN=...
 SLACK_CLIENT_ID=...
 SLACK_CLIENT_SECRET=...
 SLACK_CALLBACK=http://localhost:5000/slack/auth/callback
-SLACK_ADMINS=...
+
+# Slack admins usernames, comma-separated
+SLACK_ADMINS=user1,user2
+
+# Slack channel reference ids
+SLACK_CHANNEL_PUBLIC=...
+SLACK_CHANNEL_ADMIN=...
+
+# Maximum debt allowed (otherwise infinity)
+MAX_DEBT=1000
+
+# App specific stuff
+DEBUG=true
+NODE_ENV=development
+BASE_URL=http://localhost:5000
+MONGODB_URI=mongodb://localhost:27017
 DEBUG=true
