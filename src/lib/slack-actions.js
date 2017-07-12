@@ -3,6 +3,7 @@ import numeral from 'numeral';
 import kiosk from 'src/lib/kiosk-service';
 import googleSheet from 'src/lib/google-sheet';
 import Slack from 'src/lib/slack';
+import moment from 'moment';
 
 const adminActions = {
 	/**
@@ -203,6 +204,39 @@ const actions = {
 		} else if (user.debt < 0) {
 			userDebtText = `Tienes *${user.formattedDebt}* a favor :money_with_wings:`;
 		}
+
+		const userPurchases = await user.getPurchases(3);
+
+		const purchasesAttachments = userPurchases.length
+			? [
+					{
+						text: `Últimas ${userPurchases.length} compras:`,
+					},
+					..._.map(userPurchases, purchase => {
+						let actions = undefined;
+						const product = _.find(products, { item: purchase.product });
+
+						if (product) {
+							actions = [
+								{
+									name: 'item',
+									text: 'Comprar de nuevo',
+									type: 'button',
+									value: product._id,
+								},
+							];
+						}
+
+						return {
+							mrkdwn_in: ['text'],
+							text: `*${purchase.product}*: ${numeral(purchase.amount).format()} - ${moment(purchase.createdAt).fromNow()}`,
+							callback_id: 'purchase',
+							actions,
+						};
+					}),
+				]
+			: [];
+
 		const attachments = [
 			{
 				callback_id: 'purchase',
@@ -220,6 +254,7 @@ const actions = {
 					},
 				],
 			},
+			...purchasesAttachments,
 			{
 				callback_id: 'cancel',
 				color: 'danger',
@@ -260,7 +295,10 @@ const actions = {
 	 */
 	purchase: async ctx => {
 		const payload = ctx.state.slack;
-		const productId = _.get(payload, 'actions.0.selected_options.0.value');
+		const productId =
+			_.get(payload, 'actions.0.selected_options.0.value') ||
+			_.get(payload, 'actions.0.value');
+
 		const currentDebt = ctx.state.user.debt;
 
 		if (currentDebt >= (process.env.MAX_DEBT || Infinity))
