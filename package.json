@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "engines": {
+  	"node": "8.1.4"
+  },
   "scripts": {
     "dev": "env NODE_ENV=development node ./main",
     "start": "node ./main",
