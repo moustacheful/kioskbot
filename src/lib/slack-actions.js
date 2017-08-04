@@ -182,7 +182,7 @@ const adminActions = {
 					{
 						short: true,
 						title: user.debt < 0 ? 'Crédito' : 'Deuda',
-						value: ctx.state.user.formattedDebt,
+						value: user.formattedDebt,
 					},
 				],
 			},
