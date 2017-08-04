@@ -199,7 +199,7 @@ const adminActions = {
 				...message,
 				text: `Compra revertida (${product.item} - ${purchase.formattedAmount}) por @${ctx.state.user.username}`,
 			},
-			user.username
+			`@${user.username}`
 		);
 
 		// Notify admin channel
