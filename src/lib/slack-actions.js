@@ -116,22 +116,39 @@ const adminActions = {
 			purchasesCount
 		);
 
-		const attachments = _.map(purchases, purchase => ({
-			mrkdwn_in: ['text'],
-			callback_id: 'revert',
-			attachment_type: 'default',
-			text: `${purchase.product} (${purchase.quantity} un.) *${purchase.formattedAmount}*`,
-			actions: [
-				{
-					name: 'purchase_revert',
-					text: 'Cancelar',
-					type: 'button',
-					style: 'danger',
-				},
-			],
-			footer: 'Compra realizada ',
-			ts: purchase.createdAt.getTime() / 1000,
-		}));
+		const dateLimit = moment().subtract(1, 'day');
+
+		const attachments = _.map(purchases, purchase => {
+			const actions = !purchase.reverted &&
+				moment(purchase.createdAt).isAfter(dateLimit)
+				? {
+						actions: [
+							{
+								name: 'purchase_id',
+								text: 'Cancelar',
+								type: 'button',
+								style: 'danger',
+								value: purchase._id,
+							},
+						],
+					}
+				: {};
+
+			let attachmentLabel = `${purchase.product} (${purchase.quantity} un.) `;
+			attachmentLabel += purchase.reverted
+				? `~${purchase.formattedAmount}~ *REVERTIDO*`
+				: `*${purchase.formattedAmount}*`;
+
+			return {
+				mrkdwn_in: ['text'],
+				callback_id: 'revert',
+				attachment_type: 'default',
+				text: attachmentLabel,
+				...actions,
+				footer: 'Compra realizada ',
+				ts: purchase.createdAt.getTime() / 1000,
+			};
+		});
 
 		let text = '';
 
@@ -148,10 +165,7 @@ const adminActions = {
 	},
 
 	revert: async ctx => {
-		const purchaseId = _.get(
-			ctx.state.slack,
-			'actions.0.selected_options.0.value'
-		);
+		const purchaseId = _.get(ctx.state.slack, 'actions.0.value');
 
 		const { user, product, purchase } = await kiosk.revertPurchase(purchaseId);
 
@@ -275,9 +289,13 @@ const actions = {
 							];
 						}
 
+						const purchasePriceLabel = purchase.reverted
+							? `~${purchase.formattedAmount}~ *REVERTIDO*`
+							: purchase.formattedAmount;
+
 						return {
 							mrkdwn_in: ['text'],
-							text: `*${purchase.product}*: ${numeral(purchase.amount).format()} - ${moment(purchase.createdAt).fromNow()}`,
+							text: `*${purchase.product}*: ${purchasePriceLabel} - ${moment(purchase.createdAt).fromNow()}`,
 							callback_id: 'purchase',
 							actions,
 						};
@@ -383,7 +401,7 @@ const actions = {
 		};
 
 		Slack.chat.postMessage(
-			`${user.username} acaba de comprar ${product.item}`,
+			`${ctx.state.user.username} acaba de comprar ${product.item}`,
 			process.env.SLACK_CHANNEL_ADMIN
 		);
 
