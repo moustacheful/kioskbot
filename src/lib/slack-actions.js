@@ -393,7 +393,7 @@ const actions = {
 						{
 							short: true,
 							title: debt < 0 ? 'Crédito' : 'Deuda',
-							value: ctx.state.user.formattedDebt,
+							value: numeral(debt).format(),
 						},
 					],
 				},
