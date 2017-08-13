@@ -393,7 +393,7 @@ const actions = {
 						{
 							short: true,
 							title: debt < 0 ? 'Crédito' : 'Deuda',
-							value: numeral(debt).format(),
+							value: numeral(Math.abs(debt)).format(),
 						},
 					],
 				},
