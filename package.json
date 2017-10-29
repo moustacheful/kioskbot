@@ -1,43 +1,44 @@
 {
-  "name": "kioskbot",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "engines": {
-  	"node": "8.1.4"
-  },
-  "scripts": {
-    "dev": "env NODE_ENV=development node ./main",
-    "start": "node ./main",
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "author": "moustacheful",
-  "license": "ISC",
-  "dependencies": {
-    "app-module-path": "^2.1.0",
-    "babel": "^6.5.2",
-    "babel-core": "^6.17.0",
-    "babel-plugin-syntax-async-functions": "^6.13.0",
-    "babel-plugin-transform-es2015-destructuring": "^6.16.0",
-    "babel-plugin-transform-object-rest-spread": "^6.16.0",
-    "babel-plugin-transform-regenerator": "^6.16.1",
-    "babel-polyfill": "^6.16.0",
-    "babel-preset-es2015": "^6.16.0",
-    "babel-register": "^6.16.3",
-    "bluebird": "^3.4.6",
-    "dotenv": "^2.0.0",
-    "googleapis": "^14.0.0",
-    "koa": "^2.0.0",
-    "koa-bodyparser": "^3.2.0",
-    "koa-router": "^7.0.1",
-    "lodash": "^4.16.4",
-    "mongoose": "^4.6.8",
-    "newrelic": "^1.34.0",
-    "node-fetch": "^1.6.3",
-    "node-schedule": "^1.2.0",
-    "numeral": "^1.5.3",
-    "pm2": "^2.0.18",
-    "request-promise": "^4.1.1",
-    "universal-analytics": "^0.4.13"
-  }
+	"name": "kioskbot",
+	"version": "1.0.0",
+	"description": "",
+	"main": "index.js",
+	"engines": {
+		"node": "8.6.0"
+	},
+	"scripts": {
+		"dev": "env NODE_ENV=development node ./main",
+		"start": "node ./main",
+		"test": "echo \"Error: no test specified\" && exit 1"
+	},
+	"author": "moustacheful",
+	"license": "ISC",
+	"dependencies": {
+		"algoliasearch": "^3.24.5",
+		"app-module-path": "^2.1.0",
+		"babel": "^6.5.2",
+		"babel-core": "^6.17.0",
+		"babel-plugin-syntax-async-functions": "^6.13.0",
+		"babel-plugin-transform-es2015-destructuring": "^6.16.0",
+		"babel-plugin-transform-object-rest-spread": "^6.16.0",
+		"babel-plugin-transform-regenerator": "^6.16.1",
+		"babel-polyfill": "^6.16.0",
+		"babel-preset-es2015": "^6.16.0",
+		"babel-register": "^6.16.3",
+		"bluebird": "^3.4.6",
+		"dotenv": "^2.0.0",
+		"googleapis": "^14.0.0",
+		"koa": "^2.0.0",
+		"koa-bodyparser": "^3.2.0",
+		"koa-router": "^7.0.1",
+		"lodash": "^4.16.4",
+		"mongoose": "^4.6.8",
+		"newrelic": "^1.34.0",
+		"node-fetch": "^1.6.3",
+		"node-schedule": "^1.2.0",
+		"numeral": "^1.5.3",
+		"pm2": "^2.0.18",
+		"request-promise": "^4.1.1",
+		"universal-analytics": "^0.4.13"
+	}
 }

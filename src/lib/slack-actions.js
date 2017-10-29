@@ -415,6 +415,24 @@ const actions = {
 				iq: purchase.quantity,
 			});
 	},
+
+	search: async ctx => {
+		const payload = ctx.state.slack;
+		const results = await kiosk.searchProduct(payload.text);
+		const bestMatch = results.hits[0];
+
+		const overrides = {
+			callback_id: 'purchase',
+			actions: [{ selected_options: [{ value: bestMatch._id }] }],
+		};
+
+		ctx.state.slack = {
+			...ctx.state.slack,
+			...overrides,
+		};
+
+		await actions.purchase(ctx);
+	},
 };
 
 export default async function(action, ctx, ...rest) {
@@ -427,7 +445,7 @@ export default async function(action, ctx, ...rest) {
 		selectedAction = adminActions[action];
 	}
 
-	if (!selectedAction) ctx.throw(`Comando inválido: ${action}`, 404);
+	if (!selectedAction) selectedAction = actions.search;
 
 	return await selectedAction(ctx, ...rest);
 }

@@ -6,6 +6,7 @@ import Product from 'src/models/product';
 import Purchase from 'src/models/purchase';
 import User from 'src/models/user';
 import Slack from 'src/lib/slack';
+import { ProductIndex } from 'src/lib/algolia';
 
 class KioskService {
 	constructor() {
@@ -146,19 +147,8 @@ class KioskService {
 		return User.find({ debt: { $lt: 0 } }).sort({ debt: 1 });
 	}
 
-	async isUpToDate(incoming) {
-		// Currently unused;
-		return true;
-		/*
-		const lastRevision = await redis.hgetallAsync('app:last-revision');
-		if (lastRevision && incoming.id === lastRevision.id){
-			return true;
-		}
-		incoming.lastModifyingUser = incoming.lastModifyingUser.displayName;
-		await redis.hmset('app:last-revision', incoming);
-
-		return false;
-		*/
+	searchProduct(str) {
+		return ProductIndex.search(str);
 	}
 }
 
