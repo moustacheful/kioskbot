@@ -4,6 +4,7 @@ import _ from 'lodash';
 import SlackMiddleware from 'src/middleware/slack';
 import SlackActions from 'src/lib/slack-actions';
 import AnalyticsMiddleware from 'src/middleware/analytics';
+import kiosk from 'src/lib/kiosk-service';
 
 const router = Router({ prefix: '/slack' });
 
