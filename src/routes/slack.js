@@ -31,7 +31,7 @@ router.post('/suggestions', async ctx => {
 
 	ctx.body = {
 		options: stock.map(p => ({
-			text: p.item,
+			text: `${p.formattedPrice} | ${p.item}`,
 			value: p._id,
 		})),
 	};
