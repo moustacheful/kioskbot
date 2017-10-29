@@ -313,7 +313,7 @@ const actions = {
 						name: 'product_select',
 						text: 'Seleccionar producto',
 						type: 'select',
-						data_source: 'external',
+						data_source: process.env.USE_SEARCH_ON_STOCK && 'external',
 						options: _.map(products, product => ({
 							text: `${product.formattedPrice} | ${product.item}`,
 							value: product._id,

@@ -25,6 +25,11 @@ SLACK_CHANNEL_ADMIN=...
 # Maximum debt allowed (otherwise infinity)
 MAX_DEBT=1000
 
+# Search related
+ALGOLIA_APP_ID=...
+ALGOLIA_API_KEY=...
+USE_SEARCH_ON_STOCK=true
+
 # App specific stuff
 DEBUG=true
 NODE_ENV=development
