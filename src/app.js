@@ -6,6 +6,7 @@ import ErrorHandler from 'src/middleware/error-handler';
 import auth from 'src/routes/auth';
 import slack from 'src/routes/slack';
 import common from 'src/routes/common';
+import api from 'src/routes/api';
 
 // Create the app instance
 const app = new Koa();
@@ -19,6 +20,7 @@ if (process.env.USE_AUTH_ROUTES) {
 	auth(app);
 }
 
+api(app);
 slack(app);
 common(app);
 
