@@ -12,7 +12,7 @@ router.use(SlackMiddleware);
 router.use(AnalyticsMiddleware);
 
 router.post('/', async ctx => {
-	let [action] = ctx.request.body.text.split(' ');
+	let [action] = ctx.state.slack.text.split(' ');
 	await SlackActions(action || 'stock', ctx);
 });
 

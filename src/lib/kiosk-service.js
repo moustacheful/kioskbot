@@ -1,4 +1,5 @@
 import _ from 'lodash';
+import moment from 'moment';
 import Promise from 'bluebird';
 import googleSheet from 'src/lib/google-sheet';
 import Product from 'src/models/product';
@@ -58,15 +59,57 @@ class KioskService {
 		const { index, stockActual } = updatedProduct;
 		// Exec async tasks.
 		googleSheet.update(index, 2, stockActual);
-		Slack.chat.postMessage(
-			`${user.username} acaba de comprar ${product.item}`,
-			process.env.SLACK_CHANNEL_ADMIN
-		);
 
 		return {
 			purchase,
 			debt: updatedUser.debt,
 			product: updatedProduct,
+		};
+	}
+
+	async revertPurchase(purchaseId) {
+		const purchase = await Purchase.findById(purchaseId).populate('user');
+		if (!purchase) throw new Error(`No se encontró la compra ${purchaseId}.`);
+		if (purchase.reverted)
+			throw new Error('Esta compra ya había sido revertida.');
+
+		const dateLimit = moment().subtract(1, 'day');
+		if (moment(purchase.createdAt).isBefore(dateLimit)) {
+			throw new Error('Esta compra es muy antigua :(, debe ser máximo 1 día.');
+		}
+
+		const product = await Product.findOne({ item: purchase.product });
+		if (!product) throw new Error('No se encontró el producto.');
+
+		await Promise.all([
+			product.update({
+				$inc: {
+					stockActual: 1,
+				},
+			}),
+			purchase.user.update({
+				$inc: {
+					debt: -purchase.amount,
+				},
+			}),
+			purchase.update({
+				reverted: true,
+			}),
+		]);
+
+		const [updatedUser, updatedProduct] = await Promise.all([
+			User.findById(purchase.user._id),
+			Product.findById(product._id),
+		]);
+
+		const { index, stockActual } = updatedProduct;
+
+		googleSheet.update(index, 2, stockActual);
+
+		return {
+			user: updatedUser,
+			product: updatedProduct,
+			purchase: purchase,
 		};
 	}
 

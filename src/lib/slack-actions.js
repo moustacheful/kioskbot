@@ -13,7 +13,7 @@ const adminActions = {
 		const users = await kiosk.getUsersWithCredit();
 
 		const list = _.map(users, user => {
-			return `- *${user.username}*   ${numeral(Math.abs(user.debt)).format()}`;
+			return `- *${user.username}*   ${user.formattedDebt}`;
 		});
 
 		if (!list.length) list.push(`No hay usuarios con abonos.`);
@@ -31,7 +31,7 @@ const adminActions = {
 		const users = await kiosk.getOutstandingTabs();
 
 		const list = _.map(users, user => {
-			return `- *${user.username}*   ${numeral(user.debt).format()}`;
+			return `- *${user.username}*   ${user.formattedDebt}`;
 		});
 
 		if (!list.length) list.push(`No hay usuarios con deudas.`);
@@ -116,29 +116,46 @@ const adminActions = {
 			purchasesCount
 		);
 
-		const attachments = _.map(purchases, purchase => ({
-			mrkdwn_in: ['text'],
-			callback_id: 'purchase',
-			attachment_type: 'default',
-			text: `${purchase.product} (${purchase.quantity} un.) *${numeral(purchase.amount).format()}*`,
-			actions: [
-				{
-					name: 'revertir',
-					text: 'Cancelar',
-					type: 'button',
-					style: 'danger',
-				},
-			],
-			footer: 'Compra realizada ',
-			ts: purchase.createdAt.getTime() / 1000,
-		}));
+		const dateLimit = moment().subtract(1, 'day');
+
+		const attachments = _.map(purchases, purchase => {
+			const actions = !purchase.reverted &&
+				moment(purchase.createdAt).isAfter(dateLimit)
+				? {
+						actions: [
+							{
+								name: 'purchase_id',
+								text: 'Cancelar',
+								type: 'button',
+								style: 'danger',
+								value: purchase._id,
+							},
+						],
+					}
+				: {};
+
+			let attachmentLabel = `${purchase.product} (${purchase.quantity} un.) `;
+			attachmentLabel += purchase.reverted
+				? `~${purchase.formattedAmount}~ *REVERTIDO*`
+				: `*${purchase.formattedAmount}*`;
+
+			return {
+				mrkdwn_in: ['text'],
+				callback_id: 'revert',
+				attachment_type: 'default',
+				text: attachmentLabel,
+				...actions,
+				footer: 'Compra realizada ',
+				ts: purchase.createdAt.getTime() / 1000,
+			};
+		});
 
 		let text = '';
 
 		if (user.debt > 0) {
-			text = `${username} debe  ${numeral(user.debt).format()} :rat:`;
+			text = `${username} debe  ${user.formattedDebt} :rat:`;
 		} else if (user.debt < 0) {
-			text = `${username} tiene ${numeral(Math.abs(user.debt)).format()} a favor :money_with_wings:`;
+			text = `${username} tiene ${user.formattedDebt} a favor :money_with_wings:`;
 		} else {
 			text = `${username} no registra deuda :tada:`;
 		}
@@ -147,7 +164,52 @@ const adminActions = {
 		ctx.body = { text, attachments };
 	},
 
-	cancelar: async ctx => {},
+	revert: async ctx => {
+		const purchaseId = _.get(ctx.state.slack, 'actions.0.value');
+
+		const { user, product, purchase } = await kiosk.revertPurchase(purchaseId);
+
+		const attachments = [
+			{
+				text: `${product.item}`,
+				color: 'good',
+				fields: [
+					{
+						short: true,
+						title: 'Reembolsado',
+						value: purchase.formattedAmount,
+					},
+					{
+						short: true,
+						title: user.debt < 0 ? 'Crédito' : 'Deuda',
+						value: user.formattedDebt,
+					},
+				],
+			},
+		];
+
+		const message = {
+			text: `Compra revertida para *@${user.username}* (${product.item} - ${purchase.formattedAmount}) por @${ctx.state.user.username}`,
+			attachments,
+		};
+
+		// Notify user
+		Slack.chat.postMessage(
+			{
+				...message,
+				text: `Compra revertida (${product.item} - ${purchase.formattedAmount}) por @${ctx.state.user.username}`,
+			},
+			`@${user.username}`
+		);
+
+		// Notify admin channel
+		Slack.chat.postMessage(message, process.env.SLACK_CHANNEL_ADMIN);
+
+		// Ephemeral notification
+		ctx.body = message;
+
+		// TODO: analytics
+	},
 };
 
 const actions = {
@@ -227,9 +289,13 @@ const actions = {
 							];
 						}
 
+						const purchasePriceLabel = purchase.reverted
+							? `~${purchase.formattedAmount}~ *REVERTIDO*`
+							: purchase.formattedAmount;
+
 						return {
 							mrkdwn_in: ['text'],
-							text: `*${purchase.product}*: ${numeral(purchase.amount).format()} - ${moment(purchase.createdAt).fromNow()}`,
+							text: `*${purchase.product}*: ${purchasePriceLabel} - ${moment(purchase.createdAt).fromNow()}`,
 							callback_id: 'purchase',
 							actions,
 						};
@@ -248,7 +314,7 @@ const actions = {
 						text: 'Seleccionar producto',
 						type: 'select',
 						options: _.map(products, product => ({
-							text: `${numeral(product.precio).format()} | ${product.item}`,
+							text: `${product.formattedPrice} | ${product.item}`,
 							value: product._id,
 						})),
 					},
@@ -291,7 +357,7 @@ const actions = {
 	},
 
 	/**
-	 * Purchase and item.
+	 * Purchase an item.
 	 */
 	purchase: async ctx => {
 		const payload = ctx.state.slack;
@@ -322,7 +388,7 @@ const actions = {
 						{
 							short: true,
 							title: 'Precio',
-							value: numeral(product.precio).format(),
+							value: product.formattedPrice,
 						},
 						{
 							short: true,
@@ -333,6 +399,11 @@ const actions = {
 				},
 			],
 		};
+
+		Slack.chat.postMessage(
+			`${ctx.state.user.username} acaba de comprar ${product.item}`,
+			process.env.SLACK_CHANNEL_ADMIN
+		);
 
 		if (!ctx.state.visitor) return;
 

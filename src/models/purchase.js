@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
+import numeral from 'numeral';
 
-const purchaseSchema = new mongoose.Schema({
+const schema = new mongoose.Schema({
 	product: {
 		type: String,
 		required: true,
@@ -8,12 +9,17 @@ const purchaseSchema = new mongoose.Schema({
 	amount: {
 		type: Number,
 		required: true,
+		min: 1,
 	},
 	quantity: {
 		type: Number,
 		required: true,
 		default: 1,
 		min: 1,
+	},
+	reverted: {
+		type: Boolean,
+		default: false,
 	},
 	user: {
 		type: mongoose.Schema.Types.ObjectId,
@@ -22,4 +28,8 @@ const purchaseSchema = new mongoose.Schema({
 	createdAt: { type: Date, default: Date.now },
 });
 
-export default mongoose.model('Purchase', purchaseSchema);
+schema.virtual('formattedAmount').get(function() {
+	return numeral(this.amount).format();
+});
+
+export default mongoose.model('Purchase', schema);
