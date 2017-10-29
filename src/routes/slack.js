@@ -29,8 +29,6 @@ router.post('/suggestions', async ctx => {
 	// Hopefully this wont be necessary.
 	const stock = await kiosk.getStock(_.map(results.hits, '_id'));
 
-	console.log(stock);
-
 	ctx.body = {
 		options: stock.map(p => ({
 			text: p.item,
