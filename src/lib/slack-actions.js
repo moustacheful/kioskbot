@@ -313,6 +313,7 @@ const actions = {
 						name: 'product_select',
 						text: 'Seleccionar producto',
 						type: 'select',
+						data_source: 'external',
 						options: _.map(products, product => ({
 							text: `${product.formattedPrice} | ${product.item}`,
 							value: product._id,
@@ -419,8 +420,11 @@ const actions = {
 	search: async ctx => {
 		const payload = ctx.state.slack;
 		const results = await kiosk.searchProduct(payload.text);
-		const bestMatch = results.hits[0];
 
+		if (!results.hits.length)
+			ctx.throw(`No encontramos nada para *${payload.text}*`);
+
+		const bestMatch = results.hits[0];
 		const overrides = {
 			callback_id: 'purchase',
 			actions: [{ selected_options: [{ value: bestMatch._id }] }],
@@ -430,8 +434,8 @@ const actions = {
 			...ctx.state.slack,
 			...overrides,
 		};
-
-		await actions.purchase(ctx);
+		ctx.body = results;
+		//await actions.purchase(ctx);
 	},
 };
 

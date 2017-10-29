@@ -21,6 +21,23 @@ router.post('/action', async ctx => {
 	await SlackActions(action, ctx);
 });
 
+router.post('/suggestions', async ctx => {
+	const payload = ctx.state.slack;
+
+	const results = await kiosk.searchProduct(payload.value);
+	// Hopefully this wont be necessary.
+	const stock = await kiosk.getStock(_.map(results.hits, '_id'));
+
+	console.log(stock);
+
+	ctx.body = {
+		options: stock.map(p => ({
+			text: p.item,
+			value: p._id,
+		})),
+	};
+});
+
 export default function(app) {
 	app.use(router.routes());
 	app.use(router.allowedMethods());

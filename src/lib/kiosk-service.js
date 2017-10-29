@@ -6,6 +6,7 @@ import Product from 'src/models/product';
 import Purchase from 'src/models/purchase';
 import User from 'src/models/user';
 import Slack from 'src/lib/slack';
+import { Types } from 'mongoose';
 import { ProductIndex } from 'src/lib/algolia';
 
 class KioskService {
@@ -13,8 +14,11 @@ class KioskService {
 		googleSheet.on('stockUpdated', this.updateStock.bind(this));
 	}
 
-	async getStock() {
-		return Product.find({ stockActual: { $gt: 0 } });
+	async getStock(ids = []) {
+		const q = { stockActual: { $gt: 0 } };
+		if (ids.length) q._id = { $in: ids.map(Types.ObjectId) };
+
+		return Product.find(q);
 	}
 
 	async updateStock(newStock, revisionData) {
@@ -147,8 +151,12 @@ class KioskService {
 		return User.find({ debt: { $lt: 0 } }).sort({ debt: 1 });
 	}
 
-	searchProduct(str) {
-		return ProductIndex.search(str);
+	searchProduct(query) {
+		return ProductIndex.search({
+			query,
+			getRankingInfo: true,
+			attributesToHighlight: [],
+		});
 	}
 }
 
