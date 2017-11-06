@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "engines": {
-  	"node": "8.1.4"
+    "node": "8.1.4"
   },
   "scripts": {
     "dev": "env NODE_ENV=development node ./main",
@@ -27,6 +27,7 @@
     "bluebird": "^3.4.6",
     "dotenv": "^2.0.0",
     "googleapis": "^14.0.0",
+    "html-entities": "^1.2.1",
     "koa": "^2.0.0",
     "koa-bodyparser": "^3.2.0",
     "koa-router": "^7.0.1",

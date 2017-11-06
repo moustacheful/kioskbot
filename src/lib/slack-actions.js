@@ -3,6 +3,7 @@ import numeral from 'numeral';
 import url from 'url';
 import qs from 'qs';
 import moment from 'moment';
+import { XmlEntities } from 'html-entities';
 import kiosk from 'src/lib/kiosk-service';
 import googleSheet from 'src/lib/google-sheet';
 import Slack from 'src/lib/slack';
@@ -397,9 +398,13 @@ const actions = {
 	}
 };
 
+
+
 export default async function(actionString, ctx, ...rest) {
 	let user = ctx.state.user;
-	let parsedAction = url.parse(actionString);
+	const entities = new XmlEntities();
+
+	let parsedAction = url.parse(entities.decode(actionString));
 
 	const action = parsedAction.pathname;
 	ctx.state.actionParams = qs.parse(parsedAction.query);
