@@ -388,7 +388,7 @@ const actions = {
 
 	wire_user_selection: async (ctx) => {
 		const { actionParams } = ctx.state;
-		console.log(actionParams)
+
 		if (actionParams.apiKey !== process.env.KB_SERVICES_API_KEY) ctx.throw('Nope.');
 
 		const slackId = _.get(ctx.state.slack, 'actions.0.selected_options.0.value') ;
