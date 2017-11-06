@@ -121,11 +121,14 @@ class KioskService {
 		return { user, purchases };
 	}
 
-	async payTabForUser(username, amount) {
-		const user = await User.findOne({ username });
+	async payTabForUser({ username, slackId, amount }) {
+		const query = username ? { username } : { sid: slackId };
+		const user = await User.findOne(query);
 
 		if (!user)
-			throw new Error(`Usuario ${username} no existe en los registros.`);
+			throw new Error(
+				`Usuario ${username || slackId} no existe en los registros.`
+			);
 		if (!amount) amount = user.debt;
 
 		await user.update({
@@ -135,7 +138,7 @@ class KioskService {
 		});
 
 		const updatedUser = await User.findById(user._id);
-		return { paid: amount, remainder: updatedUser.debt };
+		return { paid: amount, remainder: updatedUser.debt, user: updatedUser };
 	}
 
 	getOutstandingTabs() {

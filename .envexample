@@ -31,3 +31,6 @@ NODE_ENV=development
 BASE_URL=http://localhost:5000
 MONGODB_URI=mongodb://localhost:27017
 DEBUG=true
+
+# Services
+KB_SERVICES_API_KEY=...

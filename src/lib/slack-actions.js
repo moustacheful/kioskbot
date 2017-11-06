@@ -1,9 +1,12 @@
 import _ from 'lodash';
 import numeral from 'numeral';
+import url from 'url';
+import qs from 'qs';
+import moment from 'moment';
 import kiosk from 'src/lib/kiosk-service';
 import googleSheet from 'src/lib/google-sheet';
 import Slack from 'src/lib/slack';
-import moment from 'moment';
+import Notify from 'src/lib/slack-notifications';
 
 const adminActions = {
 	/**
@@ -50,46 +53,12 @@ const adminActions = {
 		let [, user, amount] = ctx.state.slack.text.split(' ');
 		user = user.replace('@', '');
 
-		const result = await kiosk.payTabForUser(user, amount);
+		const result = await kiosk.payTabForUser({ username: user, amount });
 
-		const attachments = [
-			{
-				fields: [
-					{
-						short: true,
-						title: 'Pagado',
-						value: numeral(result.paid).format(),
-					},
-					{
-						short: true,
-						title: result.remainder < 0 ? 'Crédito' : 'Restante',
-						value: numeral(Math.abs(result.remainder)).format(),
-					},
-				],
-			},
-		];
-
-		// Notify the user about payment received
-		Slack.chat
-			.postMessage(
-				{
-					text: `Gracias! Acabamos de recibir tu pago.`,
-					attachments,
-				},
-				`@${user}`
-			)
-			.catch(() => console.log('Could not send message'));
-
-		// Notify admins, for logging purposes.
-		Slack.chat
-			.postMessage(
-				{
-					text: `Deuda pagada para *@${user}* (_pagado por @${currentUser.username}_)`,
-					attachments,
-				},
-				process.env.SLACK_CHANNEL_ADMIN
-			)
-			.catch(() => console.log('Could not send message'));
+		const attachments = Notify.payment({
+			result,
+			paidBy: `@${currentUser.username}`,
+		});
 
 		// Respond the admin
 		ctx.body = {
@@ -415,12 +384,27 @@ const actions = {
 				iq: purchase.quantity,
 			});
 	},
+
+	wire_user_selection: (ctx) => {
+		const { actionParams } = ctx.state;
+
+		if (actionParams.apiKey !== process.env.KB_SERVICES_API_KEY) ctx.throw('Nope.');
+
+		const slackId = _.get(ctx.state.slack, 'actions.0.selected_options.0.value') ;
+		const result = await kiosk.payTabForUser({ slackId, amount: actionParams.amount });
+
+		Notify.payment({ result, paidBy: 'Payment Gateway' });
+	}
 };
 
-export default async function(action, ctx, ...rest) {
+export default async function(actionString, ctx, ...rest) {
 	let user = ctx.state.user;
-	let selectedAction = actions[action];
+	let parsedAction = url.parse(actionString);
 
+	const action = parsedAction.pathname;
+	ctx.state.actionParams = qs.parse(parsedAction.query);
+
+	let selectedAction = actions[action];
 	if (!selectedAction && adminActions[action]) {
 		if (!user.isAdmin)
 			ctx.throw('No estás autorizado para ejecutar este comando.', 401);
