@@ -385,7 +385,7 @@ const actions = {
 			});
 	},
 
-	wire_user_selection: (ctx) => {
+	wire_user_selection: async (ctx) => {
 		const { actionParams } = ctx.state;
 
 		if (actionParams.apiKey !== process.env.KB_SERVICES_API_KEY) ctx.throw('Nope.');
